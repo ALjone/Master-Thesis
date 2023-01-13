@@ -3,7 +3,8 @@ import numpy as np
 import gym
 from gym import spaces
 import matplotlib.pyplot as plt
-
+import matplotlib as mpl
+import io
 
 class BlackBox(gym.Env):
     def __init__(self, resolution = 41, domain = [2, 12, 2, 12], u_v_range = 4, num_init_points = 2, T = 60):
@@ -42,6 +43,9 @@ class BlackBox(gym.Env):
         y_bins = np.linspace(self.y_min, self.y_max, self.resolution)
 
         self.vals =  np.array(np.meshgrid(x_bins, y_bins)).T.reshape(-1, 2)
+
+        #Used for the logger
+        self.all_actions = []
 
         self.reset()
 
@@ -99,7 +103,7 @@ class BlackBox(gym.Env):
         for _ in range(self.num_init_points):
             x = np.random.randint(self.x_min, self.x_max)
             y = np.random.randint(self.y_min, self.y_max)
-            self.step((x, y))
+            self.step((x, y), True)
 
         self.steps = 0
 
@@ -148,7 +152,7 @@ class BlackBox(gym.Env):
             print(x, y)
         return indicies
 
-    def step(self, action) -> Tuple[np.ndarray, float, bool]:
+    def step(self, action, init=False) -> Tuple[np.ndarray, float, bool]:
         """Completes the given action and returns the new map"""
         x, y = action[0], action[1]
 
@@ -170,6 +174,8 @@ class BlackBox(gym.Env):
         self.previous_closeness_to_max = self.get_closeness_to_max()
 
         self.actions_done.append(((x-self.x_min)*(self.resolution-1)/(self.x_max-self.x_min), (y-self.y_min)*(self.resolution-1)/(self.y_max-self.y_min)))
+        if not init:
+            self.all_actions.append((x, y))
 
         pred_max, true_max = self.get_pred_true_max()
         return self.get_state(), reward, bool(self.time > self.T), {"pred_max": pred_max, "true_max": true_max}
@@ -217,4 +223,16 @@ class BlackBox(gym.Env):
             plt.show()
 
         else:
-            return self.grid[0]
+            actions = list(zip(*self.all_actions[-20000:]))
+            fig, ax = plt.subplots()
+            img = ax.hist2d(actions[0], actions[1], bins = [np.arange(self.x_min, self.x_max, (self.x_max-self.x_min)/self.resolution),
+            np.arange(self.y_min, self.y_max, (self.y_max-self.y_min)/self.resolution)], norm=mpl.colors.LogNorm())
+            #fig.colorbar(img, ax=ax)
+            fig.title("Action distribution")
+
+            with io.BytesIO() as buff:
+                fig.savefig(buff, format='raw')
+                buff.seek(0)
+                data = np.frombuffer(buff.getvalue(), dtype=np.uint8)
+            w, h = fig.canvas.get_width_height()
+            return data.reshape((int(h), int(w), -1))
