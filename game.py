@@ -227,8 +227,8 @@ class BlackBox(gym.Env):
             fig, ax = plt.subplots()
             img = ax.hist2d(actions[0], actions[1], bins = [np.arange(self.x_min, self.x_max, (self.x_max-self.x_min)/self.resolution),
             np.arange(self.y_min, self.y_max, (self.y_max-self.y_min)/self.resolution)], norm=mpl.colors.LogNorm())
-            #fig.colorbar(img, ax=ax)
-            fig.title("Action distribution")
+            fig.colorbar(img[3], ax=ax)
+            #fig.title("Action distribution")
 
             with io.BytesIO() as buff:
                 fig.savefig(buff, format='raw')
