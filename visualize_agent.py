@@ -1,4 +1,4 @@
-from game import BlackBox
+from env import BlackBox
 from stable_baselines3 import PPO
 
 
@@ -9,17 +9,14 @@ R = 0
 t = 0
 sims = 5000
 
-s = game.reset()
+s = game.get_state()
 done = False
 #continue
 while not done:
-    #action, _states = model.predict(s)
-    action = []
-    for i in range(2):
-        action.append(float(input()))
+    action, _ = model.predict(s, deterministic=True)
 
     s, r, done, info = game.step(action)
-    print("Found max:", (info["pred_max"]/info["true_max"]).item(), action)
+    print("Found max:", round((info["pred_max"]/info["true_max"]).item(), 4), "Action:", action, "Reward:", round(r, 4))
     game.render()
     R += r
     t += 1

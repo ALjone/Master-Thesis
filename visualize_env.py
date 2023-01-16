@@ -1,4 +1,4 @@
-from game import BlackBox
+from env import BlackBox
 
 env = BlackBox()
 while True:
