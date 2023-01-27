@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from game import BlackBox
+from env import BlackBox
 import numpy as np
 from tqdm import tqdm
 from stable_baselines3 import PPO
@@ -27,7 +27,7 @@ for i in tqdm(range(sims)):
     #continue
     while not done:
         if model is not None:
-            action, _states = model.predict(s)
+            action, _states = model.predict(s, deterministic=True)
         else:
             action = (np.random.uniform(game.x_min, game.x_max), np.random.uniform(game.y_min, game.y_max))
         x_actions.append(action[0])

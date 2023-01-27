@@ -1,10 +1,5 @@
-import numpy as np
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.logger import Image
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import io
-
 
 class LoggerCallback(BaseCallback):
     def __init__(self, verbose=0):
