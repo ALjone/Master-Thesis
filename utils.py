@@ -7,7 +7,7 @@ from stable_baselines3 import PPO
 def find_average_for_start_points(env: gym.Env, sims = 10000):
 
     R = 0
-    for _ in tqdm(range(sims), leave=False):
+    for _ in tqdm(range(sims), leave=False, desc="Average value"):
         env.reset()
         R += env.previous_closeness_to_max
 
@@ -20,7 +20,7 @@ def benchmark(env: gym.Env, sims = 10000, start_point_average: float = 0):
     R = 0
     t = 0
 
-    for _ in tqdm(range(sims), leave=False):
+    for _ in tqdm(range(sims), leave=False, desc = "Benchmark"):
         env.reset()
 
         done = False
@@ -39,7 +39,7 @@ def test_model(env: gym.Env, model: PPO = None, sims = 1000, start_point_average
 
     R = 0
     steps = 0
-    for _ in tqdm(range(sims), leave=False):
+    for _ in tqdm(range(sims), leave=False, desc = "Testing model"):
         s = env.reset()
 
         done = False
