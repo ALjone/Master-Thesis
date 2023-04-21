@@ -1,15 +1,16 @@
 import numpy as np
+import torch
 
 class TileCoder:
     def __init__(self, resolution, domain) -> None:
         x_min = domain[0]
         x_max = domain[1]
-        y_min = domain[2]
-        y_max = domain[3]
-        z_min = domain[4]
-        z_max = domain[5]
+        y_min = domain[0]
+        y_max = domain[1]
+        z_min = domain[0]
+        z_max = domain[1]
 
-        self.resolution = resolution
+        """self.resolution = resolution
 
         #Need there to fit half the resolution, plus an additional half box on each side
         x_bin_size = (x_max-x_min)/((resolution//2-1)+0.5)
@@ -24,23 +25,23 @@ class TileCoder:
         self.y_bins_right = np.linspace(y_min+y_bin_size/2, y_max, resolution//2, dtype=np.float64)
 
         self.z_bins_left = np.linspace(z_min, z_max-z_bin_size/2, resolution//2, dtype=np.float64)
-        self.z_bins_right = np.linspace(z_min+z_bin_size/2, z_max, resolution//2, dtype=np.float64)
+        self.z_bins_right = np.linspace(z_min+z_bin_size/2, z_max, resolution//2, dtype=np.float64)"""
 
         #NO TILE CODING WITH THIS:
 
-        self.x_bins = np.linspace(x_min, x_max, resolution)
-        self.y_bins = np.linspace(y_min, y_max, resolution)
-        self.z_bins = np.linspace(z_min, z_max, resolution)
+        self.x_bins = torch.linspace(x_min, x_max, resolution).to(torch.device("cuda"))
+        self.y_bins = torch.linspace(y_min, y_max, resolution).to(torch.device("cuda"))
+        self.z_bins = torch.linspace(z_min, z_max, resolution).to(torch.device("cuda"))
 
        
 
     def __getitem__(self, x):
+        #TODO: Needs to work with batches?
         x, y, z = x
-        indices = []
-        x = np.digitize(x, self.x_bins)-1
-        y = np.digitize(y, self.y_bins)-1
-        z = np.digitize(z, self.z_bins)-1
-        return [(x, y, z)]
+        x = torch.bucketize(x, self.x_bins)
+        y = torch.bucketize(y, self.y_bins)
+        z = torch.bucketize(z, self.z_bins)
+        return (x, y, z)
 
         #NOTE: This below works, just need to add z
 
@@ -65,12 +66,3 @@ class TileCoder:
         #print()
         return indices
 
-
-#for resolution in [80]:
-#    coder = TileCoder(resolution, [0, 10, 0, 10], 0)
-
-#coder[10, 10]
-
-#coder[8, 8]
-
-#coder[0, 0]
