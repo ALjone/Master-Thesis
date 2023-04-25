@@ -37,7 +37,7 @@ class Agent(nn.Module):
             ).shape[1]+1
 
         self.action_mean = nn.Linear(n_flatten, 3)
-        self.action_logstd = nn.Parameter(torch.ones((3, )))#nn.Linear(n_flatten, 3)
+        self.action_logstd = nn.Parameter(torch.ones(3, ))#nn.Linear(n_flatten, 3)
 
         self.critic_cnn = nn.Sequential(
             nn.Conv3d(3, 8, kernel_size=4, stride=1),
@@ -52,7 +52,6 @@ class Agent(nn.Module):
             nn.ReLU(),
             nn.Flatten(),
         )
-
         self.critic = nn.Linear(n_flatten, 1)
 
         print("Running with", self.count_parameters(), "parameters")
@@ -63,7 +62,8 @@ class Agent(nn.Module):
         x = self.actor_cnn(observations)
         x = torch.concatenate((x, time.unsqueeze(1)), dim = 1)
         action_mean = self.action_mean(x) #Batch dim, (Mean, Std), (x, y, z)
-        action_std = torch.exp(self.action_logstd)
+        action_std = torch.exp(self.action_logstd(x))
+
         if torch.any(torch.isnan(x)):
             print("Found", torch.isnan(x).sum(), "NaNs in action mean")
             print("Max in observation:", torch.max(observations))
@@ -73,9 +73,10 @@ class Agent(nn.Module):
             print("Max found in x:", torch.max(x))
             print("Found", torch.isnan(action_std).sum(), "NaNs in action std")
 
-        x = self.critic_cnn(observations)
+        x = self.critic_cnn(x)
         x = torch.concatenate((x, time.unsqueeze(1)), dim = 1)
         critic_output = self.critic(x)
+        
         return action_mean, action_std, critic_output
 
 
@@ -86,13 +87,18 @@ class Agent(nn.Module):
     def get_action_and_value(self, img, time, action=None):
         
         action_mean, action_std, critic_output = self(img, time)
-        probs = Normal(action_mean, action_std)
-        if torch.any(torch.isnan(img)):
-            print("Found", torch.isnan(img).sum(), "NaNs in input")
 
+        std = action_std.exp()
+
+        normal = Normal(action_mean, std)
+        x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
         if action is None:
-            action = probs.sample()
-        return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), critic_output
+            action = torch.tanh(x_t)
+        log_prob = normal.log_prob(x_t)
+        log_prob -= torch.log(1.0 - action.pow(2) + 1e-8)
+        log_prob = log_prob.sum(1)
+
+        return action, log_prob, normal.entropy().sum(1), critic_output
     
 
     def count_parameters(self):

@@ -6,6 +6,7 @@ import time
 from distutils.util import strtobool
 from batched_env import BlackBox
 from agent import Agent
+from tanh_agent import Agent as tanh_Agent
 
 import gym
 import numpy as np
@@ -54,7 +55,7 @@ def parse_args():
         help="the surrogate clipping coefficient")
     parser.add_argument("--clip-vloss", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggles whether or not to use a clipped loss for the value function, as per the paper.")
-    parser.add_argument("--ent-coef", type=float, default=0.01,
+    parser.add_argument("--ent-coef", type=float, default=0.0,
         help="coefficient of the entropy")
     parser.add_argument("--vf-coef", type=float, default=0.5,
         help="coefficient of the value function")
@@ -83,10 +84,10 @@ if __name__ == "__main__":
     )
 
     # TRY NOT TO MODIFY: seeding
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    torch.backends.cudnn.deterministic = args.torch_deterministic
+    #random.seed(args.seed)
+    #np.random.seed(args.seed)
+    #torch.manual_seed(args.seed)
+    #torch.backends.cudnn.deterministic = args.torch_deterministic
 
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cuda")
 
@@ -94,10 +95,11 @@ if __name__ == "__main__":
     env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution)
 
     agent = Agent(env.observation_space).to(device)
-    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
+    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5, weight_decay=1e-4)
 
     # ALGO Logic: Storage setup
-    obs = torch.zeros((args.num_steps, args.batch_size) + env.observation_space.shape).to(device)
+    img_obs = torch.zeros((args.num_steps, args.batch_size) + env.observation_space.shape).to(device)
+    time_obs = torch.zeros((args.num_steps, args.batch_size)).to(device)
     actions = torch.zeros((args.num_steps, args.batch_size) + env.action_space.shape).to(device)
     logprobs = torch.zeros((args.num_steps, args.batch_size)).to(device)
     rewards = torch.zeros((args.num_steps, args.batch_size)).to(device)
@@ -107,7 +109,7 @@ if __name__ == "__main__":
     # TRY NOT TO MODIFY: start the game
     global_step = 0
     start_time = time.time()
-    next_obs = env.reset()
+    next_img_obs, next_time_obs = env.reset()
     next_done = torch.zeros(args.batch_size).to(device)
     num_updates = args.total_timesteps // args.batch_size
     for update in range(1, num_updates + 1):
@@ -120,29 +122,32 @@ if __name__ == "__main__":
 
         for step in range(0, args.num_steps):
             global_step += 1 * args.batch_size
-            obs[step] = next_obs
+            img_obs[step] = next_img_obs
+            time_obs[step] = next_time_obs
             dones[step] = next_done
 
             # ALGO LOGIC: action logic
             with torch.no_grad():
-                action, logprob, _, value = agent.get_action_and_value(next_obs)
+                action, logprob, _, value = agent.get_action_and_value(next_img_obs, next_time_obs)
                 values[step] = value.flatten()
             actions[step] = action
             logprobs[step] = logprob
 
             # TRY NOT TO MODIFY: execute the game and log data.
-            next_obs, reward, next_done, info = env.step(action)
+            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action)
             rewards[step] = reward.view(-1)
 
             if torch.sum(next_done) > 0:
                 returns = torch.mean(info["episodic_returns"][next_done])
                 lengths = torch.mean(info["episodic_length"][next_done])
+                peak = torch.mean(info["peak"][next_done])
                 #print(f"global_step={global_step}, episodic_return={returns}")
                 writer.add_scalar("charts/episodic_return", returns, global_step)
                 writer.add_scalar("charts/episodic_length", lengths, global_step)
+                writer.add_scalar("charts/portion_of_max", peak, global_step)
         # bootstrap value if not done
         with torch.no_grad():
-            next_value = agent.get_value(next_obs).reshape(1, -1)
+            next_value = agent.get_value(next_img_obs, next_time_obs).reshape(1, -1)
             advantages = torch.zeros_like(rewards).to(device)
             lastgaelam = 0
             for t in reversed(range(args.num_steps)):
@@ -157,7 +162,8 @@ if __name__ == "__main__":
             returns = advantages + values
 
         # flatten the batch
-        b_obs = obs.reshape((-1,) + env.observation_space.shape)
+        b_img_obs = img_obs.reshape((-1,) + env.observation_space.shape)
+        b_time_obs = time_obs.reshape(-1, )
         b_logprobs = logprobs.reshape(-1)
         b_actions = actions.reshape((-1,) + env.action_space.shape)
         b_advantages = advantages.reshape(-1)
@@ -174,7 +180,7 @@ if __name__ == "__main__":
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
 
-                _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_obs[mb_inds], b_actions.long()[mb_inds])
+                _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_img_obs[mb_inds], b_time_obs[mb_inds], b_actions.long()[mb_inds])
                 logratio = newlogprob - b_logprobs[mb_inds]
                 ratio = logratio.exp()
 
@@ -226,6 +232,8 @@ if __name__ == "__main__":
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
+        writer.add_scalar("charts/max_observation", next_img_obs.max(), global_step)
+        writer.add_scalar("charts/min_observation", next_img_obs.min(), global_step)
         writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
         writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
         writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)
@@ -233,9 +241,8 @@ if __name__ == "__main__":
         writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
         writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
-        print("SPS:", (global_step / (time.time() - start_time)))
+        print("SPS:", (global_step / (time.time() - start_time)), "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
         torch.save(agent, "model.t")
 
-    env.close()
     writer.close()

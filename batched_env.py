@@ -20,17 +20,23 @@ def EI(u, std, biggest, e = 0.01):
     return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
 
 class BlackBox():
-    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 3, T = 60, kernels = None, acquisition = None):
+    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 3, T = 15, kernels = None, acquisition = None):
         #TODO: Add printing info
         #Set important variables
         self.num_init_points = num_init_points
         self.resolution = resolution
         self.batch_size = batch_size
 
+        self.action_max = 1
+        self.action_min = -1
+
+        assert self.action_max == 1, "Fix transform action if you want to use action max other than 1"
+
         #Things for the env
         self.observation_space = spaces.Box(low=0, high=1, shape=
                     (3, resolution, resolution, resolution), dtype=np.float32)
-        self.action_space = spaces.Box(low = 0, high = 1, shape = (3, ), dtype=np.float32)
+        self.action_space = spaces.Box(low = self.action_min, high = self.action_max, shape = (3, ), dtype=np.float32)
+
         self.reward_range = (0, 1) 
         
         #Set the total avaiable time
@@ -133,8 +139,8 @@ class BlackBox():
 
     def _get_reward(self):
         #TODO: Getting from 94% to 96% should reward more than 30% to 40%
-        r = self._get_closeness_to_max() - self.previous_closeness_to_max
-        return r
+        r = self._get_closeness_to_max() #- self.previous_closeness_to_max
+        return r.exp()
 
     def reset(self, idx = None) -> torch.Tensor:
         """Resets the game, making it a fresh instance with no memory of previous happenings"""
@@ -174,16 +180,17 @@ class BlackBox():
 
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
-        mean, std = self.GP.get_mean_std(self.actions_for_gp[idx], self.values_for_gp[idx], idx)
+        #TODO: This self.max is to normalize it, highly experimental, and should be far more modular
+        mean, interval = self.GP.get_mean_std(self.actions_for_gp[idx]/self.x_max, self.values_for_gp[idx], idx)
 
         self.grid[idx, 0] = mean
-        self.grid[idx, 1] = std
+        self.grid[idx, 1] = interval
 
     def _get_state(self):
         #TODO: This uses illegal information in that it is providing the actual max of the time function
         new_grid = torch.clone(self.grid)
-        new_grid[:, 0] = new_grid[:, 0]/self.best_prediction[:, None, None, None]
-        new_grid[:, 1] = new_grid[:, 1]/self.best_prediction[:, None, None, None] #TODO: Is it correct to divide the std with the biggest prediction? Or should it be by biggest std? Ask Nello?
+        #new_grid[:, 0] = new_grid[:, 0]/self.best_prediction[:, None, None, None]
+        #new_grid[:, 1] = new_grid[:, 1]/self.best_prediction[:, None, None, None] #TODO: Is it correct to divide the std with the biggest prediction? Or should it be by biggest std? Ask Nello?
         new_grid[:, 2] = new_grid[:, 2]/self.T
 
         return new_grid, self.time
@@ -192,9 +199,9 @@ class BlackBox():
         return self.coder[x, y, z]
 
     def _transform_action(self, val, new_max, new_min):
-        OldRange = (1 - 0)  
+        OldRange = (self.action_max - self.action_min)  
         NewRange = (new_max - new_min)
-        return (((val - 0) * NewRange) / OldRange) + new_min
+        return (((val - self.action_min) * NewRange) / OldRange) + new_min
 
     def _transform_actions(self, x, y, z):
         return self._transform_action(x, self.x_max, self.x_min), self._transform_action(y, self.y_max, self.y_min), self._transform_action(z, self.z_max, self.z_min)
@@ -203,7 +210,7 @@ class BlackBox():
         """Completes the given action and returns the new map"""
 
         #Clip actions
-        torch.sigmoid(action, out = action)
+        torch.tanh(action, out = action)
 
         #Transform from -1 to 1 -> current domain
         x, y, z = self._transform_actions(action[:, 0], action[:, 1], action[:, 2])
@@ -211,9 +218,6 @@ class BlackBox():
 
         #Find the indices of the different overlapping boxes
         (x_ind, y_ind, z_ind) = self._find_indices(x, y, z)
-        #print("x:", round(x[0].item(), 3), "y:", round(y[0].item(), 3), "z:", round(z[0].item(), 3))
-        #print("x_ind:", x_ind[0].item(), "y_ind:", y_ind[0].item(), "z_ind:", z_ind[0].item())
-        #print()
 
         #Find the time and value for this action
         time = self._t(x, y, z)
@@ -232,7 +236,6 @@ class BlackBox():
         self._update_grid_with_GP()
 
         self.grid[:, 2, x_ind, y_ind, z_ind] = torch.maximum(time, self.grid[:, 2, x_ind, y_ind, z_ind])
-        print("Time in step:", (torch.sum(self.grid[0, 2])/self.T)/self.T)
 
         #Update timestuff
         self.time = self.time + time
@@ -245,12 +248,12 @@ class BlackBox():
         pred_max, true_max = self._get_pred_true_max()
 
         self.batch_step = self.batch_step + 1
-        #print("Reward:")
-        #print(reward)
-        self.episodic_returns = self.episodic_returns + reward
-        info = {"pred_max": pred_max, "true_max": true_max, "episodic_returns": self.episodic_returns.clone(), "episodic_length" : self.batch_step.clone().to(torch.float)}
-
         dones = self.time > self.T
+        reward[~dones] = 0
+
+        self.episodic_returns = self.episodic_returns + reward
+        info = {"peak": pred_max/true_max, "episodic_returns": self.episodic_returns.clone(), "episodic_length" : self.batch_step.clone().to(torch.float)}
+
         if torch.sum(dones) > 0:
             self.reset(torch.nonzero(dones).squeeze())
 

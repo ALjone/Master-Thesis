@@ -9,16 +9,18 @@ from utils import rand
 #f1, f2, f3 etc kan være lavdimensionelle, med en NN som genererer litt woobliness 
 
 class RandomFunction:
-    def __init__(self, domain, resolution, batch_size, noise_scale = 0.6, noise_correlation = 2) -> None:
+    def __init__(self, domain, resolution, batch_size, noise_scale = 2, noise_correlation = 1) -> None:
         self.range = domain
         self.resolution = resolution    
         self.noise_scale = noise_scale
         self.batch_size = batch_size
         self.noise_correlation = noise_correlation
         self.params = {}
+        self.a_vals = (0.01, 0.5)
+        self.b_vals = (0.01, 0.5)
         for dim in range(3):
-            self.params[dim] = {"a": -1*rand(0.1, 0.2, size=(self.batch_size)),
-                                "b": rand(0.01, 0.03, size=(self.batch_size)),
+            self.params[dim] = {"a": -1*rand(self.a_vals[0], self.a_vals[1], size=(self.batch_size)),
+                                "b": rand(self.b_vals[0], self.b_vals[1], size=(self.batch_size)),
                                 "p": rand(self.range[0], self.range[1], size=(self.batch_size))}
             
         x = torch.linspace(self.range[0], self.range[1], self.resolution)
@@ -29,7 +31,6 @@ class RandomFunction:
         self.max = torch.zeros((batch_size)).to(torch.device("cuda"))
         self.min = torch.zeros((batch_size)).to(torch.device("cuda"))
         
-
         self.reset()
 
 
@@ -40,10 +41,10 @@ class RandomFunction:
             b = self.params[dim]["b"]
             p = self.params[dim]["p"]
 
-            a[idx] = -1*rand(0.1, 0.2, size=(idx.shape[0]))
-            b[idx] = rand(0.01, 0.03, size=(idx.shape[0]))
+            a[idx] = -1*rand(self.a_vals[0], self.a_vals[1], size=(idx.shape[0]))
+            b[idx] = rand(self.b_vals[0], self.b_vals[1], size=(idx.shape[0]))
             p[idx] = rand(self.range[0], self.range[1], size=(idx.shape[0]))
-            self.params[dim] = {"a":a,
+            self.params[dim] = {"a": a,
                                 "b": b,
                                 "p": p}
         self._make_matrix(idx)
@@ -71,7 +72,7 @@ class RandomFunction:
 
         matrix = matrix * noise
         matrix = matrix/torch.amax(matrix, dim = (0, 1, 2))
-        self.max[idx] = torch.amax(matrix, dim = (0, 1, 2))
+        self.max[idx] = torch.ones((len(idx), )).to(torch.device("cuda"))#torch.amax(matrix, dim = (0, 1, 2))
         assert len(self.max.shape) == 1, f"Expected max to have one dimension, found: {self.max.shape}"
         self.min[idx] = torch.amin(matrix, dim = (0, 1, 2))
 
@@ -90,26 +91,27 @@ class RandomFunction:
             dim_0 = ", ".join([f"{key}: {round(item[i].item(), 4)}" for key, item in self.params[0].items()])
             dim_1 = ", ".join([f"{key}: {round(item[i].item(), 4)}" for key, item in self.params[1].items()])
             dim_2 = ", ".join([f"{key}: {round(item[i].item(), 4)}" for key, item in self.params[2].items()])
-            plt.title(f"Dim 0: {dim_0} \nDim 1: {dim_1}, \nDim 2: {dim_2}")
+            plt.title(f"Dim 0: {dim_0} \nDim 1: {dim_1}, \nDim 2: {dim_2}\nDim 0")
             plt.imshow(torch.mean(matrix[i], dim = 0).squeeze().cpu().numpy())
             plt.colorbar()
             plt.show()
             plt.cla()
-            plt.title(f"Dim 0: {dim_0} \nDim 1: {dim_1}, \nDim 2: {dim_2}")
+            plt.title(f"Dim 0: {dim_0} \nDim 1: {dim_1}, \nDim 2: {dim_2}\nDim 1")
             plt.imshow(torch.mean(matrix[i], dim = 1).squeeze().cpu().numpy())
             plt.colorbar()
             plt.show()
             plt.cla()
-            plt.title(f"Dim 0: {dim_0} \nDim 1: {dim_1}, \nDim 2: {dim_2}") 
+            plt.title(f"Dim 0: {dim_0} \nDim 1: {dim_1}, \nDim 2: {dim_2}\nDim 2") 
             plt.imshow(torch.mean(matrix[i], dim = 2).squeeze().cpu().numpy())
             plt.colorbar()
             plt.show()
             plt.cla()
             print(i)
 
+
 if __name__ == "__main__":
     #TODO: Play with parameters, they ain't good nuff. Copula for å korrelere dimensjonene
-    f = RandomFunction((0, 10), 40, 2, noise_scale = 2, noise_correlation=2)
+    f = RandomFunction((0, 10), 40, 2)
     for i in range(100):
         f.visualize_two_dims()
         f.reset()

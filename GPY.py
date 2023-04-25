@@ -23,7 +23,7 @@ class GP:
         #TODO: REWRITE TO WORK FROM 0-1 OR SOMETHING
         self.training_iters = training_iters
         self.learning_rate = learning_rate
-        self.kernels = kernels if kernels is not None else [MaternKernel, RBFKernel]
+        self.kernels = kernels if kernels is not None else[RBFKernel] #[MaternKernel, RBFKernel]
         self.verbose = verbose
         self.resolution = resolution
         self.min_, self.max_ = domain[0], domain[1]
@@ -97,5 +97,6 @@ class GP:
         #TODO: Scale back?
         self.mean = observed_pred.mean
         self.std = observed_pred.stddev
+        self.interval = self.mean+2*self.std
 
-        return self.mean.reshape(-1, self.resolution, self.resolution, self.resolution), self.std.reshape(-1, self.resolution, self.resolution, self.resolution)
+        return self.mean.reshape(-1, self.resolution, self.resolution, self.resolution), self.interval.reshape(-1, self.resolution, self.resolution, self.resolution)
