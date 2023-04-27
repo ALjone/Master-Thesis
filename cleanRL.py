@@ -67,6 +67,8 @@ def parse_args():
         help="batch size")
     parser.add_argument("--resolution", type=int, default=30,
         help="resolution")
+    parser.add_argument("--dims", type=int, default=2,
+        help="dims")
     args = parser.parse_args()
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
     # fmt: on
@@ -92,15 +94,15 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cuda")
 
     # env setup
-    env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution)
+    env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution, dims = args.dims)
 
-    agent = Agent(env.observation_space).to(device)
+    agent = Agent(env.observation_space, args.dims).to(device)
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5, weight_decay=1e-4)
 
     # ALGO Logic: Storage setup
-    img_obs = torch.zeros((args.num_steps, args.batch_size) + env.observation_space.shape).to(device)
+    img_obs = torch.zeros((args.num_steps, ) + env.observation_space.shape).to(device)
     time_obs = torch.zeros((args.num_steps, args.batch_size)).to(device)
-    actions = torch.zeros((args.num_steps, args.batch_size) + env.action_space.shape).to(device)
+    actions = torch.zeros((args.num_steps, ) + env.action_space.shape).to(device)
     logprobs = torch.zeros((args.num_steps, args.batch_size)).to(device)
     rewards = torch.zeros((args.num_steps, args.batch_size)).to(device)
     dones = torch.zeros((args.num_steps, args.batch_size)).to(device)
@@ -134,7 +136,7 @@ if __name__ == "__main__":
             logprobs[step] = logprob
 
             # TRY NOT TO MODIFY: execute the game and log data.
-            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action)
+            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action, True)
             rewards[step] = reward.view(-1)
 
             if torch.sum(next_done) > 0:
@@ -162,10 +164,10 @@ if __name__ == "__main__":
             returns = advantages + values
 
         # flatten the batch
-        b_img_obs = img_obs.reshape((-1,) + env.observation_space.shape)
+        b_img_obs = img_obs.reshape((-1,) + env.observation_space.shape[1:])
         b_time_obs = time_obs.reshape(-1, )
         b_logprobs = logprobs.reshape(-1)
-        b_actions = actions.reshape((-1,) + env.action_space.shape)
+        b_actions = actions.reshape((-1,) + env.action_space.shape[1:])
         b_advantages = advantages.reshape(-1)
         b_returns = returns.reshape(-1)
         b_values = values.reshape(-1)
@@ -241,7 +243,7 @@ if __name__ == "__main__":
         writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
         writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
-        print("SPS:", (global_step / (time.time() - start_time)), "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
+        print("SPS:", (global_step / (time.time() - start_time)))#, "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
         torch.save(agent, "model.t")
 

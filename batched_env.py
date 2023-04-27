@@ -20,12 +20,13 @@ def EI(u, std, biggest, e = 0.01):
     return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
 
 class BlackBox():
-    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 3, T = 15, kernels = None, acquisition = None):
+    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 3, T = 15, kernels = None, acquisition = None, dims = 3):
         #TODO: Add printing info
         #Set important variables
         self.num_init_points = num_init_points
         self.resolution = resolution
         self.batch_size = batch_size
+        self.dims = dims
 
         self.action_max = 1
         self.action_min = -1
@@ -34,8 +35,8 @@ class BlackBox():
 
         #Things for the env
         self.observation_space = spaces.Box(low=0, high=1, shape=
-                    (3, resolution, resolution, resolution), dtype=np.float32)
-        self.action_space = spaces.Box(low = self.action_min, high = self.action_max, shape = (3, ), dtype=np.float32)
+                    ((batch_size, 3) + tuple(resolution for _ in range(dims))), dtype=np.float32)
+        self.action_space = spaces.Box(low = self.action_min, high = self.action_max, shape = (batch_size, dims), dtype=np.float32)
 
         self.reward_range = (0, 1) 
         
@@ -43,12 +44,12 @@ class BlackBox():
         self.T = T
 
         #Initialize the bounds
-        self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max = domain[0], domain[1], domain[0], domain[1], domain[0], domain[1]
+        self.x_min, self.x_max = domain[0], domain[1]
 
         self.steps = 0
 
-        self.coder = TileCoder(resolution, domain) #NOTE: Sorta useless atm
-        self.function_generator = RandomFunction((domain[0], domain[1]), resolution, batch_size)
+        self.coder = TileCoder(resolution, domain, dims = dims) #NOTE: Sorta useless atm
+        self.function_generator = RandomFunction((domain[0], domain[1]), resolution, batch_size, dims = dims)
 
         #For GP
         self.acquisition = acquisition if acquisition is not None else EI
@@ -56,21 +57,22 @@ class BlackBox():
 
 
         self.time = torch.zeros(batch_size).to(torch.device("cuda"))
-        self.grid = torch.zeros((self.batch_size, 3, self.resolution, self.resolution, self.resolution), dtype = torch.float32).to(torch.device("cuda"))
-        self.a = rand(1, 2, size=(self.batch_size, )).to(torch.device("cuda"))
-        self.b = rand(1, 2, size=(self.batch_size, )).to(torch.device("cuda"))
-        self.c = rand(1, 2, size=(self.batch_size, )).to(torch.device("cuda"))
-        self.d = rand(2, 4, size=(self.batch_size, )).to(torch.device("cuda"))
-        self.max_time = self._t(self.x_max, self.y_max, self.z_max, idx = torch.arange(start=0, end=batch_size)).to(torch.device("cuda"))
+        self.grid = torch.zeros(self.observation_space.shape, dtype = torch.float32).to(torch.device("cuda"))
+        self.params_for_time = {}
+        for dim in range(dims):
+            self.params_for_time[dim] = rand(1, 2, size=(self.batch_size, )).to(torch.device("cuda"))
+        self.params_for_time["constant"] = rand(2, 4, size=(self.batch_size, )).to(torch.device("cuda"))
+
+        self.max_time = self._t([self.x_max for _ in range(dims)], idx = torch.arange(start=0, end=batch_size)).to(torch.device("cuda"))
         assert self.max_time.shape[0] == batch_size
 
-        self.actions_for_gp = torch.zeros((batch_size, 50, 3)).to(torch.device("cuda"))
+        self.actions_for_gp = torch.zeros((batch_size, 50, dims)).to(torch.device("cuda"))
         self.values_for_gp = torch.zeros((batch_size, 50)).to(torch.device("cuda"))
         self.batch_step = torch.zeros((batch_size)).to(torch.long).to(torch.device("cuda")) #The tracker for what step each "env" is at 
         self.best_prediction = torch.zeros((batch_size)).to(torch.device("cuda")) #Assumes all predictions are positive
         self.previous_closeness_to_max = torch.zeros((batch_size)).to(torch.device("cuda"))
         
-        self.GP = GP(kernels, batch_size, domain, self.resolution)
+        self.GP = GP(kernels, batch_size, domain, self.resolution, dims=dims)
         self.idx = torch.arange(start = 0, end = self.batch_size).to(torch.device("cuda"))
 
         self.episodic_returns = torch.zeros((batch_size)).to(torch.device("cuda"))
@@ -87,35 +89,35 @@ class BlackBox():
         pred, true = self._get_pred_true_max()
         return pred/true
 
-    def _t(self, x, y, z, idx = None):
+    def _t(self, action, idx = None):
         if idx is None: idx = self.idx
         #TODO: Is this correct? Why so much transformation here
         x_range = self.x_max-self.x_min
-        y_range = self.y_max-self.y_min
-        z_range = self.z_max-self.z_min
-        x = (x-self.x_min)/x_range
-        y = (y-self.y_min)/y_range
-        z = (z-self.z_min)/z_range
+        res = 0
+        for act, dim in zip(action, range(self.dims), strict=True):
+            act = (act-self.x_min)/x_range
+            res += self.params_for_time[dim][idx]*act
+        res += self.params_for_time["constant"][idx] + torch.normal(0, 0.1, size = (idx.shape[0], )).to(torch.device("cuda"))
 
-        return self.a[idx] * x + self.b[idx] * y + self.c[idx] * z + self.d[idx] + torch.normal(0, 0.1, size = (idx.shape[0], )).to(torch.device("cuda"))
+        return res
 
     def _check_init_points(self, idx):
         if idx.shape[0] == 0:
             return
         #raise NotImplementedError("Needs to circumvent step, to only check init points for idx")
         for i in range(self.num_init_points):
-            action = rand(0, 1, (idx.shape[0], 3)) #self.action_space.sample()[idx].to(torch.device("cuda"))
+            action = rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
             if len(action.shape) == 1: action = action.unsqueeze(0)
             #Transform from -1 to 1 -> current domain
-            x, y, z = self._transform_actions(action[:, 0], action[:, 1], action[:, 2])
+            act = self._transform_actions([action[:, i] for i in range(self.dims)])
 
             #Find the indices of the different overlapping boxes
-            (x_ind, y_ind, z_ind) = self._find_indices(x, y, z)
+            ind = self._find_indices(act)
 
             #Find the time and value for this action
-            time = self._t(x, y, z, idx)
+            time = self._t(ind, idx)
 
-            action_value = self.func_grid[idx, x_ind, y_ind, z_ind].squeeze()
+            action_value = self.func_grid[(idx, ) + tuple(i for i in ind)].squeeze()
 
             if i == 0: #First time we just fill the entire thing, to satisfy same-size stuff in GPY
 
@@ -128,7 +130,7 @@ class BlackBox():
                 self.actions_for_gp[idx, i] = action
                 self.values_for_gp[idx, i] = action_value
 
-            self.grid[idx, 2, x_ind, y_ind, z_ind] = torch.maximum(time, self.grid[idx, 2, x_ind, y_ind, z_ind])
+            self.grid[(idx, 2) + tuple(i for i in ind)] = torch.maximum(time, self.grid[(idx, 2) + tuple(i for i in ind)])
 
             #Update timestuff
             self.best_prediction[idx] = torch.maximum(self.best_prediction[idx], action_value)
@@ -151,12 +153,15 @@ class BlackBox():
 
         #Constants for the time function
         #NOTE: Max is 32827 seconds, min is 406
-        self.a[idx] = rand(1, 2, size=idx.shape[0]).to(torch.device("cuda"))
-        self.b[idx] = rand(1, 2, size=idx.shape[0]).to(torch.device("cuda"))
-        self.c[idx] = rand(1, 2, size=idx.shape[0]).to(torch.device("cuda"))
-        self.d[idx] = rand(2, 4, size=idx.shape[0]).to(torch.device("cuda"))
+        for dim in range(self.dims):
+            param = self.params_for_time[dim]
+            param[idx] = rand(1, 2, size=idx.shape[0]).to(torch.device("cuda"))
+            self.params_for_time[dim] = param
+        constant = self.params_for_time["constant"]
+        constant[idx] = rand(2, 4, size=idx.shape[0]).to(torch.device("cuda"))
+        self.params_for_time["constant"]
 
-        self.max_time[idx] = self._t(self.x_max, self.y_max, self.z_max, idx)
+        self.max_time[idx] = self._t([self.x_max for _ in range(self.dims)], idx)
 
         self.function_generator.reset(idx)
         self.func_grid = self.function_generator.matrix
@@ -195,39 +200,43 @@ class BlackBox():
 
         return new_grid, self.time
 
-    def _find_indices(self, x, y, z):
-        return self.coder[x, y, z]
+    def _find_indices(self, action):
+        return self.coder[tuple(a for a in action)]
 
     def _transform_action(self, val, new_max, new_min):
         OldRange = (self.action_max - self.action_min)  
         NewRange = (new_max - new_min)
         return (((val - self.action_min) * NewRange) / OldRange) + new_min
 
-    def _transform_actions(self, x, y, z):
-        return self._transform_action(x, self.x_max, self.x_min), self._transform_action(y, self.y_max, self.y_min), self._transform_action(z, self.z_max, self.z_min)
+    def _transform_actions(self, action):
+        output = []
+        for a in action:
+            output.append(self._transform_action(a, self.x_max, self.x_min))
+        return output
+        return self._transform_action(x, self.x_max, self.x_min), self._transform_action(y, self.x_max, self.x_min), self._transform_action(z, self.x_max, self.x_min)
 
-    def step(self, action) -> Tuple[torch.Tensor, float, bool]:
+    def step(self, action, transform = False) -> Tuple[torch.Tensor, float, bool]:
         """Completes the given action and returns the new map"""
 
         #Clip actions
-        torch.tanh(action, out = action)
+        if transform:
+            torch.tanh(action, out = action)
 
         #Transform from -1 to 1 -> current domain
-        x, y, z = self._transform_actions(action[:, 0], action[:, 1], action[:, 2])
+        act = self._transform_actions([action[:, i] for i in range(self.dims)])
 
 
         #Find the indices of the different overlapping boxes
-        (x_ind, y_ind, z_ind) = self._find_indices(x, y, z)
+        ind = self._find_indices(act)
 
         #Find the time and value for this action
-        time = self._t(x, y, z)
+        time = self._t(ind)
 
-        action_value = self.func_grid[torch.arange(self.batch_size), x_ind, y_ind, z_ind]
+        action_value = self.func_grid[(torch.arange(self.batch_size), ) + tuple(i for i in ind)]
         
 
         assert action_value.shape[0] == self.batch_size
 
-        #TODO: These needs to change into numpy arrays with a lot of repeating stuff
         #Gather?
         self.actions_for_gp[:, self.batch_step] = action
         self.values_for_gp[:, self.batch_step] = action_value
@@ -235,7 +244,7 @@ class BlackBox():
         #Update all the different squares that the action affected
         self._update_grid_with_GP()
 
-        self.grid[:, 2, x_ind, y_ind, z_ind] = torch.maximum(time, self.grid[:, 2, x_ind, y_ind, z_ind])
+        self.grid[(slice(None), 2) + tuple(i for i in ind)] = torch.maximum(time, self.grid[(slice(None), 2) + tuple(i for i in ind)])
 
         #Update timestuff
         self.time = self.time + time

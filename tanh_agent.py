@@ -12,7 +12,7 @@ class Agent(nn.Module):
         This corresponds to the number of unit for the last layer.
     """
 
-    def __init__(self, observation_space: spaces.Box):
+    def __init__(self, observation_space: spaces.Box, dims = 3):
         super().__init__()
         # We assume CxHxW images (channels first)
         # Re-ordering will be done by pre-preprocessing or wrapper
@@ -36,8 +36,8 @@ class Agent(nn.Module):
                 torch.as_tensor(observation_space.sample()[None]).float()
             ).shape[1]+1
 
-        self.action_mean = nn.Linear(n_flatten, 3)
-        self.action_logstd = nn.Parameter(torch.ones(3, ))#nn.Linear(n_flatten, 3)
+        self.action_mean = nn.Linear(n_flatten, dims)
+        self.action_logstd = nn.Parameter(torch.ones(dims, ))#nn.Linear(n_flatten, 3)
 
         self.critic_cnn = nn.Sequential(
             nn.Conv3d(3, 8, kernel_size=4, stride=1),
@@ -76,7 +76,7 @@ class Agent(nn.Module):
         x = self.critic_cnn(x)
         x = torch.concatenate((x, time.unsqueeze(1)), dim = 1)
         critic_output = self.critic(x)
-        
+
         return action_mean, action_std, critic_output
 
 

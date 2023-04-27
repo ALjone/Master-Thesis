@@ -18,7 +18,7 @@ class ExactGPModel(gpytorch.models.ExactGP):
 
 
 class GP:
-    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 100) -> None:
+    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 100, dims = 3) -> None:
 
         #TODO: REWRITE TO WORK FROM 0-1 OR SOMETHING
         self.training_iters = training_iters
@@ -28,26 +28,18 @@ class GP:
         self.resolution = resolution
         self.min_, self.max_ = domain[0], domain[1]
         self.device = torch.device("cuda")
+        self.dims = dims
 
-        #TODO: This should be self.points, and be batch_size x self.resolution^3 x 3
-        self.matrix = torch.einsum('i,j,k->ijk', torch.linspace(self.min_, self.max_, self.resolution), torch.linspace(self.min_, self.max_, self.resolution), torch.linspace(self.min_, self.max_, self.resolution)).to(self.device)
-        vector1 = torch.linspace(self.min_, self.max_, self.resolution)
-        vector2 = torch.linspace(self.min_, self.max_, self.resolution)
-        vector3 = torch.linspace(self.min_, self.max_, self.resolution)
+        vectors = [torch.linspace(self.min_, self.max_, self.resolution) for _ in range(dims)]
 
         # Create a meshgrid of indices
-        idx1, idx2, idx3 = np.meshgrid(torch.arange(len(vector1)),
-                                    torch.arange(len(vector2)),
-                                    torch.arange(len(vector3)),
-                                    indexing='ij')
+        idxs = np.meshgrid(*[torch.arange(len(vec)) for vec in vectors], indexing='ij')
 
         # Stack the indices and use them to index the original vectors
-        points = torch.column_stack((vector1[idx1.flatten()],
-                                vector2[idx2.flatten()],
-                                vector3[idx3.flatten()]))
+        points = torch.column_stack([vec[idx.flatten()] for vec, idx in zip(vectors, idxs)])
 
         # Reshape the result to the desired shape
-        self.points = points.repeat_interleave(batch_size, 0).reshape(batch_size, -1, 3).to(self.device)
+        self.points = points.repeat_interleave(batch_size, 0).reshape(batch_size, -1, dims).to(self.device)
 
 
     def _get_model(self, kernel, x, y):
@@ -99,4 +91,4 @@ class GP:
         self.std = observed_pred.stddev
         self.interval = self.mean+2*self.std
 
-        return self.mean.reshape(-1, self.resolution, self.resolution, self.resolution), self.interval.reshape(-1, self.resolution, self.resolution, self.resolution)
+        return self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))), self.interval.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
