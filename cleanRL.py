@@ -233,6 +233,7 @@ if __name__ == "__main__":
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
+        writer.add_scalar("charts/average_action", torch.mean(actions).item(), global_step)
         writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
         writer.add_scalar("charts/max_observation", next_img_obs.max(), global_step)
         writer.add_scalar("charts/min_observation", next_img_obs.min(), global_step)

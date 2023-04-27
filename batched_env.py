@@ -20,7 +20,7 @@ def EI(u, std, biggest, e = 0.01):
     return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
 
 class BlackBox():
-    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 3, T = 15, kernels = None, acquisition = None, dims = 3):
+    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 2, T = 15, kernels = None, acquisition = None, dims = 3):
         #TODO: Add printing info
         #Set important variables
         self.num_init_points = num_init_points
@@ -141,8 +141,8 @@ class BlackBox():
 
     def _get_reward(self):
         #TODO: Getting from 94% to 96% should reward more than 30% to 40%
-        r = self._get_closeness_to_max() #- self.previous_closeness_to_max
-        return r.exp()
+        r = self._get_closeness_to_max() - self.previous_closeness_to_max
+        return r
 
     def reset(self, idx = None) -> torch.Tensor:
         """Resets the game, making it a fresh instance with no memory of previous happenings"""
@@ -258,7 +258,7 @@ class BlackBox():
 
         self.batch_step = self.batch_step + 1
         dones = self.time > self.T
-        reward[~dones] = 0
+        #reward[~dones] = 0
 
         self.episodic_returns = self.episodic_returns + reward
         info = {"peak": pred_max/true_max, "episodic_returns": self.episodic_returns.clone(), "episodic_length" : self.batch_step.clone().to(torch.float)}
