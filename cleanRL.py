@@ -31,13 +31,13 @@ def parse_args():
         help="whether to capture videos of the agent performances (check out `videos` folder)")
 
     # Algorithm specific arguments
-    parser.add_argument("--total-timesteps", type=int, default=500000,
+    parser.add_argument("--total-timesteps", type=int, default=50000000,
         help="total timesteps of the experiments")
     parser.add_argument("--learning-rate", type=float, default=2.5e-4,
         help="the learning rate of the optimizer")
     parser.add_argument("--num-envs", type=int, default=1,
         help="the number of parallel game environments")
-    parser.add_argument("--num-steps", type=int, default=16,
+    parser.add_argument("--num-steps", type=int, default=64,
         help="the number of steps to run in each environment per policy rollout")
     parser.add_argument("--anneal-lr", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggle learning rate annealing for policy and value networks")
@@ -61,9 +61,9 @@ def parse_args():
         help="coefficient of the value function")
     parser.add_argument("--max-grad-norm", type=float, default=0.5,
         help="the maximum norm for the gradient clipping")
-    parser.add_argument("--target-kl", type=float, default=None,
+    parser.add_argument("--target-kl", type=float, default=0.3,
         help="the target KL divergence threshold")
-    parser.add_argument("--batch-size", type=float, default=32,
+    parser.add_argument("--batch-size", type=float, default=256,
         help="batch size")
     parser.add_argument("--resolution", type=int, default=30,
         help="resolution")
@@ -115,6 +115,10 @@ if __name__ == "__main__":
     next_done = torch.zeros(args.batch_size).to(device)
     num_updates = args.total_timesteps // args.batch_size
     for update in range(1, num_updates + 1):
+        episodic_lengths = []
+        episodic_returns = []
+        episodic_peaks = []
+
         agent.eval()
         # Annealing the rate if instructed to do so.
         if args.anneal_lr:
@@ -143,10 +147,10 @@ if __name__ == "__main__":
                 returns = torch.mean(info["episodic_returns"][next_done])
                 lengths = torch.mean(info["episodic_length"][next_done])
                 peak = torch.mean(info["peak"][next_done])
-                #print(f"global_step={global_step}, episodic_return={returns}")
-                writer.add_scalar("charts/episodic_return", returns, global_step)
-                writer.add_scalar("charts/episodic_length", lengths, global_step)
-                writer.add_scalar("charts/portion_of_max", peak, global_step)
+                episodic_lengths.append(lengths.item())
+                episodic_returns.append(returns.item())
+                episodic_peaks.append(peak.item())
+
         # bootstrap value if not done
         with torch.no_grad():
             next_value = agent.get_value(next_img_obs, next_time_obs).reshape(1, -1)
@@ -246,6 +250,10 @@ if __name__ == "__main__":
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
         print("SPS:", (global_step / (time.time() - start_time)))#, "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
+
+        writer.add_scalar("performance/episodic_return", np.mean(episodic_returns), global_step)
+        writer.add_scalar("performance/episodic_length", np.mean(episodic_lengths), global_step)
+        writer.add_scalar("performance/portion_of_max", np.mean(episodic_peaks), global_step)
         torch.save(agent, "model.t")
 
     writer.close()
