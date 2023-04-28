@@ -94,8 +94,9 @@ class BlackBox():
         #TODO: Is this correct? Why so much transformation here
         x_range = self.x_max-self.x_min
         res = 0
+       
         for act, dim in zip(action, range(self.dims), strict=True):
-            act = (act-self.x_min)/x_range
+            act = torch.tensor((act-self.x_min)/x_range).to(torch.device("cuda"))
             res += self.params_for_time[dim][idx]*act
         res += self.params_for_time["constant"][idx] + torch.normal(0, 0.1, size = (idx.shape[0], )).to(torch.device("cuda"))
 
@@ -106,13 +107,16 @@ class BlackBox():
             return
         #raise NotImplementedError("Needs to circumvent step, to only check init points for idx")
         for i in range(self.num_init_points):
-            action = rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
+            action = torch.tensor(self.action_space.sample()).to(torch.device("cuda")) #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
             if len(action.shape) == 1: action = action.unsqueeze(0)
             #Transform from -1 to 1 -> current domain
             act = self._transform_actions([action[:, i] for i in range(self.dims)])
+            #print("Action:", action.shape)
 
             #Find the indices of the different overlapping boxes
             ind = self._find_indices(act)
+            print(act.shape)
+            print(ind)
 
             #Find the time and value for this action
             time = self._t(ind, idx)
@@ -121,13 +125,13 @@ class BlackBox():
 
             if i == 0: #First time we just fill the entire thing, to satisfy same-size stuff in GPY
 
-                self.actions_for_gp[idx] = action.unsqueeze(1).expand(-1, 50, -1)
+                self.actions_for_gp[idx] = act.unsqueeze(1).expand(-1, 50, -1)
                 if idx.shape[0] == 1:
                     self.values_for_gp[idx] = action_value.expand(50)
                 else:
                     self.values_for_gp[idx] = action_value.unsqueeze(1).expand(-1, 50)
             else:
-                self.actions_for_gp[idx, i] = action
+                self.actions_for_gp[idx, i] = act
                 self.values_for_gp[idx, i] = action_value
 
             self.grid[(idx, 2) + tuple(i for i in ind)] = torch.maximum(time, self.grid[(idx, 2) + tuple(i for i in ind)])
@@ -186,7 +190,7 @@ class BlackBox():
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
         #TODO: This self.max is to normalize it, highly experimental, and should be far more modular
-        mean, interval = self.GP.get_mean_std(self.actions_for_gp[idx]/self.x_max, self.values_for_gp[idx], idx)
+        mean, interval = self.GP.get_mean_std(self.actions_for_gp[idx], self.values_for_gp[idx], idx)
 
         self.grid[idx, 0] = mean
         self.grid[idx, 1] = interval
@@ -201,7 +205,9 @@ class BlackBox():
         return new_grid, self.time
 
     def _find_indices(self, action):
-        return self.coder[tuple(a for a in action)]
+        #print("Action:", action)
+        #print("Idx:", self.coder[tuple(a for a in action)])
+        return self.coder[action]
 
     def _transform_action(self, val, new_max, new_min):
         OldRange = (self.action_max - self.action_min)  
@@ -212,7 +218,7 @@ class BlackBox():
         output = []
         for a in action:
             output.append(self._transform_action(a, self.x_max, self.x_min))
-        return output
+        return torch.stack(output, dim = 1).to(torch.device("cuda"))
         return self._transform_action(x, self.x_max, self.x_min), self._transform_action(y, self.x_max, self.x_min), self._transform_action(z, self.x_max, self.x_min)
 
     def step(self, action, transform = False) -> Tuple[torch.Tensor, float, bool]:
@@ -225,7 +231,6 @@ class BlackBox():
         #Transform from -1 to 1 -> current domain
         act = self._transform_actions([action[:, i] for i in range(self.dims)])
 
-
         #Find the indices of the different overlapping boxes
         ind = self._find_indices(act)
 
@@ -233,7 +238,7 @@ class BlackBox():
         time = self._t(ind)
 
         action_value = self.func_grid[(torch.arange(self.batch_size), ) + tuple(i for i in ind)]
-        
+
 
         assert action_value.shape[0] == self.batch_size
 
@@ -276,29 +281,37 @@ class BlackBox():
             axs[idx].invert_yaxis()
         axs[idx].set_title(title)
 
-    def render(self, mode='human', close=False):
+    def render(self, mode='human', close=False, batch_idx = 0):
+        assert self.dims == 2, "Only supported for 2D"
         if mode == "human":
             if close:
                 plt.cla()
                 plt.close()
             fig, axs = plt.subplots(1, 3, figsize=(20, 10))
-            self._display_axis(0, axs, fig, self.func_grid.reshape(self.resolution, self.resolution), "Function")
-            self._display_axis(1, axs, fig, self._t(self.vals[:, 0], self.vals[:, 1]).reshape(self.resolution, self.resolution), "Time")
-            self._display_axis(2, axs, fig, self._get_state()[:, :, 0], "Features for PPO", invert = True)
+            state, _ = self._get_state()
+            self._display_axis(0, axs, fig, self.func_grid[batch_idx].reshape(self.resolution, self.resolution).cuda(), "Function")
+            #TODO: Add
+            #self._display_axis(1, axs, fig, self._t(self.vals[:, 0], self.vals[:, 1]).reshape(self.resolution, self.resolution), "Time")
+            self._display_axis(1, axs, fig, state[batch_idx, 1].cuda(), "95% interval for PPO", invert = True)
+            self._display_axis(2, axs, fig, state[batch_idx, 0].cuda(), "Mean for PPO", invert = True)
 
-            max_coords = torch.argmax(self.func_grid)
+            max_coords = torch.argmax(self.func_grid[batch_idx]).item()
             y_max, x_max = divmod(max_coords, self.resolution)
 
-            for y, x in self.actions_done[:self.num_init_points]:
-                axs[0].scatter(x, y, c = "red", linewidths=7)
-                axs[1].scatter(x, y, c = "red", linewidths=7)
+            for elem in self.actions_for_gp[batch_idx, :self.num_init_points]:
+                y, x = self._find_indices(elem.unsqueeze(0))
+                axs[0].scatter(x.cuda(), y.cuda(), c = "red", linewidths=7)
+                axs[1].scatter(x.cuda(), y.cuda(), c = "red", linewidths=7)
 
-            for y, x in self.actions_done[self.num_init_points:-1]:
-                axs[0].scatter(x, y, c = "blue", linewidths=7)
-                axs[1].scatter(x, y, c = "blue", linewidths=7)
 
-            y, x = self.actions_done[-1]
-            if len(self.actions_done) > 2:
+            for elem in self.actions_for_gp[batch_idx, self.num_init_points:-1]:
+                y, x = self._find_indices(elem.unsqueeze(0))
+                axs[0].scatter(x.cuda(), y.cuda(), c = "blue", linewidths=7)
+                axs[1].scatter(x.cuda(), y.cuda(), c = "blue", linewidths=7)
+
+            #TODO: Fix this..
+            y, x = self.actions_for_gp[batch_idx, -1].cuda()
+            if len(self.actions_for_gp[batch_idx]) > 2:
                 #print("Last action idx pos", round(x, 2), round(y, 2))
                 axs[0].scatter(x, y, c = "green", linewidths=7)
                 axs[1].scatter(x, y, c = "green", linewidths=7)
@@ -308,25 +321,6 @@ class BlackBox():
 
             plt.axis("off")
             plt.show()
-        #This else is sorta hacky, this is if you want the action dist
+
         else:
-            
-            #Create a figure for the action distribution, and then return the array for it
-            fig, ax = plt.subplots()
-            if self.action_idx > self.all_actions.shape[0]:
-                actions = self.all_actions
-            else:
-                actions = self.all_actions[:self.action_idx]
-            img = ax.hist2d(actions[:, 0], actions[:, 1], bins = [torch.arange(self.x_min, self.x_max, (self.x_max-self.x_min)/self.resolution),
-            torch.arange(self.y_min, self.y_max, (self.y_max-self.y_min)/self.resolution)], norm=mpl.colors.LogNorm())
-            #fig.colorbar(img[3], ax=ax)
-
-            #Shamelessly stole this from https://stackoverflow.com/questions/7821518/matplotlib-save-plot-to-numpy-array
-            with io.BytesIO() as buff:
-                fig.savefig(buff, format='raw')
-                buff.seek(0)
-                data = torch.frombuffer(buff.getvalue(), dtype=torch.uint8)
-
-            w, h = fig.canvas.get_width_height()
-            plt.close()
-            return data.reshape((int(h), int(w), -1))
+            raise ValueError(f"Only mode 'human' supported, found: {mode}")

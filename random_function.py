@@ -74,7 +74,7 @@ class RandomFunction:
         if idx.shape[0] > 1:
             matrix = torch.einsum('ib,jb->ijb', f_1, f_2)
         else:
-            matrix = torch.einsum('i,j->ijk', f_1.squeeze(), f_2.squeeze())
+            matrix = torch.einsum('i,j->ij', f_1.squeeze(), f_2.squeeze())
         noise = self.get_noise(idx).to(torch.float).squeeze()
 
         matrix = matrix * noise
@@ -127,7 +127,7 @@ class RandomFunction:
             dim_0 = ", ".join([f"{key}: {round(item[i].item(), 4)}" for key, item in self.params[0].items()])
             dim_1 = ", ".join([f"{key}: {round(item[i].item(), 4)}" for key, item in self.params[1].items()])
             plt.title(f"Dim 0: {dim_0} \nDim 1: {dim_1}")
-            plt.imshow(matrix[i].squeeze().cpu().numpy())
+            plt.imshow(matrix[i].squeeze().cuda().numpy())
             plt.colorbar()
             plt.show()
             plt.cla()

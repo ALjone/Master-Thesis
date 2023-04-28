@@ -13,9 +13,13 @@ class TileCoder:
 
        
 
-    def __getitem__(self, *args):
-        x = args[0] #TODO: Why???
+    def __getitem__(self, x):
         output = []
-        for elem, bin in zip(x, self.bins, strict=True):
-            output.append(torch.bucketize(elem, bin))
+        for i, bin in enumerate(self.bins):
+            output.append(torch.bucketize(x[:, i], bin))
         return output
+    
+
+    if __name__ == "__main__":
+        pass
+        #TODO: Test!

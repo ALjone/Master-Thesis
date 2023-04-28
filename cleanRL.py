@@ -37,7 +37,7 @@ def parse_args():
         help="the learning rate of the optimizer")
     parser.add_argument("--num-envs", type=int, default=1,
         help="the number of parallel game environments")
-    parser.add_argument("--num-steps", type=int, default=64,
+    parser.add_argument("--num-steps", type=int, default=32,
         help="the number of steps to run in each environment per policy rollout")
     parser.add_argument("--anneal-lr", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggle learning rate annealing for policy and value networks")
@@ -63,7 +63,7 @@ def parse_args():
         help="the maximum norm for the gradient clipping")
     parser.add_argument("--target-kl", type=float, default=0.3,
         help="the target KL divergence threshold")
-    parser.add_argument("--batch-size", type=float, default=256,
+    parser.add_argument("--batch-size", type=float, default=32,
         help="batch size")
     parser.add_argument("--resolution", type=int, default=30,
         help="resolution")
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     #torch.manual_seed(args.seed)
     #torch.backends.cudnn.deterministic = args.torch_deterministic
 
-    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cuda")
+    device = torch.device("cuda")
 
     # env setup
     env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution, dims = args.dims)
@@ -232,7 +232,7 @@ if __name__ == "__main__":
                 if approx_kl > args.target_kl:
                     break
 
-        y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
+        y_pred, y_true = b_values.cuda().numpy(), b_returns.cuda().numpy()
         var_y = np.var(y_true)
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
