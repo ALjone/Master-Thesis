@@ -81,7 +81,7 @@ class GP:
 
         test_x = torch.linspace(self.min_, self.max_, self.resolution)
         test_y = torch.linspace(self.min_, self.max_, self.resolution)
-        test_xx, test_yy = torch.meshgrid(test_x, test_y)
+        test_xx, test_yy = torch.meshgrid(test_x, test_y, indexing="ij")
         test_xx = test_xx.reshape(-1, 1)
         test_yy = test_yy.reshape(-1, 1)
         self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(32, 0)

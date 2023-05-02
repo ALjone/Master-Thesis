@@ -63,7 +63,7 @@ class BlackBox():
             self.params_for_time[dim] = rand(1, 2, size=(self.batch_size, )).to(torch.device("cuda"))
         self.params_for_time["constant"] = rand(2, 4, size=(self.batch_size, )).to(torch.device("cuda"))
 
-        self.max_time = self._t([self.x_max for _ in range(dims)], idx = torch.arange(start=0, end=batch_size)).to(torch.device("cuda"))
+        self.max_time = self._t(torch.full_like(torch.zeros((batch_size, dims)), self.x_max).to(torch.device("cuda")), idx = torch.arange(start=0, end=batch_size)).to(torch.device("cuda"))
         assert self.max_time.shape[0] == batch_size
 
         self.actions_for_gp = torch.zeros((batch_size, 50, dims)).to(torch.device("cuda"))
@@ -95,8 +95,8 @@ class BlackBox():
         x_range = self.x_max-self.x_min
         res = 0
        
-        for act, dim in zip(action, range(self.dims), strict=True):
-            act = torch.tensor((act-self.x_min)/x_range).to(torch.device("cuda"))
+        for dim in range(self.dims):
+            act = (action[:, dim]-self.x_min)/x_range
             res += self.params_for_time[dim][idx]*act
         res += self.params_for_time["constant"][idx] + torch.normal(0, 0.1, size = (idx.shape[0], )).to(torch.device("cuda"))
 
@@ -110,18 +110,16 @@ class BlackBox():
             action = torch.tensor(self.action_space.sample()).to(torch.device("cuda")) #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
             if len(action.shape) == 1: action = action.unsqueeze(0)
             #Transform from -1 to 1 -> current domain
-            act = self._transform_actions([action[:, i] for i in range(self.dims)])
+            act = self._transform_actions([action[idx, i] for i in range(self.dims)])
             #print("Action:", action.shape)
 
             #Find the indices of the different overlapping boxes
             ind = self._find_indices(act)
-            print(act.shape)
-            print(ind)
 
             #Find the time and value for this action
             time = self._t(ind, idx)
 
-            action_value = self.func_grid[(idx, ) + tuple(i for i in ind)].squeeze()
+            action_value = self.func_grid[(idx, ) + tuple(ind[:, i] for i in range(ind.shape[-1]))].squeeze()
 
             if i == 0: #First time we just fill the entire thing, to satisfy same-size stuff in GPY
 
@@ -134,7 +132,7 @@ class BlackBox():
                 self.actions_for_gp[idx, i] = act
                 self.values_for_gp[idx, i] = action_value
 
-            self.grid[(idx, 2) + tuple(i for i in ind)] = torch.maximum(time, self.grid[(idx, 2) + tuple(i for i in ind)])
+            self.grid[(idx, 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(idx, 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
 
             #Update timestuff
             self.best_prediction[idx] = torch.maximum(self.best_prediction[idx], action_value)
@@ -165,7 +163,7 @@ class BlackBox():
         constant[idx] = rand(2, 4, size=idx.shape[0]).to(torch.device("cuda"))
         self.params_for_time["constant"]
 
-        self.max_time[idx] = self._t([self.x_max for _ in range(self.dims)], idx)
+        self.max_time[idx] = self._t(torch.full_like(torch.zeros((len(idx), self.dims)), self.x_max).to(torch.device("cuda")), idx)
 
         self.function_generator.reset(idx)
         self.func_grid = self.function_generator.matrix
@@ -237,7 +235,7 @@ class BlackBox():
         #Find the time and value for this action
         time = self._t(ind)
 
-        action_value = self.func_grid[(torch.arange(self.batch_size), ) + tuple(i for i in ind)]
+        action_value = self.func_grid[(torch.arange(self.batch_size), ) + tuple(ind[:, i] for i in range(ind.shape[-1]))]
 
 
         assert action_value.shape[0] == self.batch_size
@@ -249,7 +247,7 @@ class BlackBox():
         #Update all the different squares that the action affected
         self._update_grid_with_GP()
 
-        self.grid[(slice(None), 2) + tuple(i for i in ind)] = torch.maximum(time, self.grid[(slice(None), 2) + tuple(i for i in ind)])
+        self.grid[(slice(None), 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(slice(None), 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
 
         #Update timestuff
         self.time = self.time + time

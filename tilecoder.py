@@ -17,7 +17,7 @@ class TileCoder:
         output = []
         for i, bin in enumerate(self.bins):
             output.append(torch.bucketize(x[:, i], bin))
-        return output
+        return torch.stack(output, dim = 1).to(torch.device("cuda"))
     
 
     if __name__ == "__main__":
