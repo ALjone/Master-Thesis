@@ -92,6 +92,7 @@ class Agent(nn.Module):
 
         normal = Normal(action_mean, std)
         x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
+        
         if action is None:
             action = torch.tanh(x_t)
         log_prob = normal.log_prob(x_t)

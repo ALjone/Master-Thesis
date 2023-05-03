@@ -17,7 +17,7 @@ class ExactGPModel(gpytorch.models.ExactGP):
     
 
 class GP:
-    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.01, training_iters = 100, dims = 3) -> None:
+    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 50, dims = 3) -> None:
 
         #TODO: REWRITE TO WORK FROM 0-1 OR SOMETHING
         self.training_iters = training_iters
@@ -28,6 +28,7 @@ class GP:
         self.min_, self.max_ = domain[0], domain[1]
         self.device = torch.device("cuda")
         self.dims = dims
+        self.batch_size = batch_size
 
         vectors = [torch.linspace(self.min_, self.max_, self.resolution) for _ in range(dims)]
 
@@ -38,6 +39,13 @@ class GP:
         points = torch.column_stack([vec[idx.flatten()] for vec, idx in zip(vectors, idxs)])
         # Reshape the result to the desired shape
         self.points = points.repeat_interleave(batch_size, 0).reshape(batch_size, -1, dims).to(self.device)
+
+        test_x = torch.linspace(self.min_, self.max_, self.resolution)
+        test_y = torch.linspace(self.min_, self.max_, self.resolution)
+        test_xx, test_yy = torch.meshgrid(test_x, test_y, indexing="ij")
+        test_xx = test_xx.reshape(-1, 1)
+        test_yy = test_yy.reshape(-1, 1)
+        self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
 
     def _get_model(self, kernel, x, y):
         likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]]))
@@ -79,15 +87,8 @@ class GP:
 
     def _predict_matrix(self, model: ExactGPModel, likelihood: gpytorch.likelihoods.GaussianLikelihood, idx):        
 
-        test_x = torch.linspace(self.min_, self.max_, self.resolution)
-        test_y = torch.linspace(self.min_, self.max_, self.resolution)
-        test_xx, test_yy = torch.meshgrid(test_x, test_y, indexing="ij")
-        test_xx = test_xx.reshape(-1, 1)
-        test_yy = test_yy.reshape(-1, 1)
-        self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(32, 0)
         model.eval()
         likelihood.eval()
-        model.likelihood.noise = 1.01e-04
 
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
             output = model(self.points[idx])
@@ -96,9 +97,9 @@ class GP:
         #TODO: Scale back?
         self.mean = observed_pred.mean
         self.std = observed_pred.stddev
-        _, self.upper_confidene = observed_pred.confidence_region()
+        _, self.upper_confidence = observed_pred.confidence_region()
 
-        return self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))), self.upper_confidene.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
+        return self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))), self.upper_confidence.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
     
 
 if __name__ == "__main__":
@@ -107,6 +108,7 @@ if __name__ == "__main__":
     gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1)
     x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     y = torch.tensor([0, 3.4, 1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
+    #y = torch.rand(3).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
 
     #x = torch.tensor([[0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     #y = torch.tensor([1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
@@ -114,9 +116,11 @@ if __name__ == "__main__":
     idx = torch.arange(batch).to(torch.device("cuda"))
 
     mean, interval = gp.get_mean_std(x, y, idx)
-    plt.imshow(mean.cuda()[0])
+    plt.imshow(mean.cpu()[0])
+    plt.scatter([0*30, 0.5*30, 0.3*30], [0, 0.7*30, 0.3*30])
+    plt.colorbar()
     plt.show()
     plt.close()
     plt.cla()
-    plt.imshow(interval.cuda()[0])
+    plt.imshow(interval.cpu()[0])
     plt.show()

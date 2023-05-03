@@ -1,8 +1,6 @@
 from typing import Tuple
 from gym import spaces
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-import io
 from random_function import RandomFunction
 from tilecoder import TileCoder
 from GPY import GP
@@ -12,15 +10,8 @@ import numpy as np
 from scipy.stats import norm
 from utils import rand
 
-def EI(u, std, biggest, e = 0.01):
-    if std <= 0:
-        print("std under 0")
-        return 0
-    Z = (u-biggest-e)/std
-    return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
-
 class BlackBox():
-    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 2, T = 15, kernels = None, acquisition = None, dims = 3):
+    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 2, T = 60, kernels = None, dims = 3):
         #TODO: Add printing info
         #Set important variables
         self.num_init_points = num_init_points
@@ -51,8 +42,6 @@ class BlackBox():
         self.coder = TileCoder(resolution, domain, dims = dims) #NOTE: Sorta useless atm
         self.function_generator = RandomFunction((domain[0], domain[1]), resolution, batch_size, dims = dims)
 
-        #For GP
-        self.acquisition = acquisition if acquisition is not None else EI
         self.names = [str(i) for i in range(len(domain)//2)]
 
 
@@ -111,7 +100,6 @@ class BlackBox():
             if len(action.shape) == 1: action = action.unsqueeze(0)
             #Transform from -1 to 1 -> current domain
             act = self._transform_actions([action[idx, i] for i in range(self.dims)])
-            #print("Action:", action.shape)
 
             #Find the indices of the different overlapping boxes
             ind = self._find_indices(act)
@@ -232,6 +220,7 @@ class BlackBox():
         #Find the indices of the different overlapping boxes
         ind = self._find_indices(act)
 
+
         #Find the time and value for this action
         time = self._t(ind)
 
@@ -241,7 +230,7 @@ class BlackBox():
         assert action_value.shape[0] == self.batch_size
 
         #Gather?
-        self.actions_for_gp[:, self.batch_step] = action
+        self.actions_for_gp[:, self.batch_step] = act #TODO: Should this be act, or action? I'm guessing act
         self.values_for_gp[:, self.batch_step] = action_value
 
         #Update all the different squares that the action affected
@@ -287,35 +276,34 @@ class BlackBox():
                 plt.close()
             fig, axs = plt.subplots(1, 3, figsize=(20, 10))
             state, _ = self._get_state()
-            self._display_axis(0, axs, fig, self.func_grid[batch_idx].reshape(self.resolution, self.resolution).cuda(), "Function")
+            self._display_axis(0, axs, fig, self.func_grid[batch_idx].reshape(self.resolution, self.resolution).cpu(), "Function")
             #TODO: Add
             #self._display_axis(1, axs, fig, self._t(self.vals[:, 0], self.vals[:, 1]).reshape(self.resolution, self.resolution), "Time")
-            self._display_axis(1, axs, fig, state[batch_idx, 1].cuda(), "95% interval for PPO", invert = True)
-            self._display_axis(2, axs, fig, state[batch_idx, 0].cuda(), "Mean for PPO", invert = True)
+            self._display_axis(1, axs, fig, state[batch_idx, 1].cpu(), "95% interval for PPO", invert = True)
+            self._display_axis(2, axs, fig, state[batch_idx, 0].cpu(), "Mean for PPO", invert = True)
 
             max_coords = torch.argmax(self.func_grid[batch_idx]).item()
             y_max, x_max = divmod(max_coords, self.resolution)
 
-            for elem in self.actions_for_gp[batch_idx, :self.num_init_points]:
-                y, x = self._find_indices(elem.unsqueeze(0))
-                axs[0].scatter(x.cuda(), y.cuda(), c = "red", linewidths=7)
-                axs[1].scatter(x.cuda(), y.cuda(), c = "red", linewidths=7)
+            for elem in self.actions_for_gp[batch_idx, :self.num_init_points+1]:
+                a = self._find_indices(elem.unsqueeze(0)).squeeze()
+                y, x = a[0], a[1]
+                axs[0].scatter(x.cpu(), y.cpu(), c = "red", linewidths=7)
 
 
-            for elem in self.actions_for_gp[batch_idx, self.num_init_points:-1]:
-                y, x = self._find_indices(elem.unsqueeze(0))
-                axs[0].scatter(x.cuda(), y.cuda(), c = "blue", linewidths=7)
-                axs[1].scatter(x.cuda(), y.cuda(), c = "blue", linewidths=7)
+            for elem in self.actions_for_gp[batch_idx, self.num_init_points+1:]:
+                a = self._find_indices(elem.unsqueeze(0)).squeeze()
+                y, x = a[0], a[1]
+                axs[0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7)
 
             #TODO: Fix this..
-            y, x = self.actions_for_gp[batch_idx, -1].cuda()
-            if len(self.actions_for_gp[batch_idx]) > 2:
+            #y, x = self.actions_for_gp[batch_idx, -1].cpu()
+            #if len(self.actions_for_gp[batch_idx]) > 2:
                 #print("Last action idx pos", round(x, 2), round(y, 2))
-                axs[0].scatter(x, y, c = "green", linewidths=7)
-                axs[1].scatter(x, y, c = "green", linewidths=7)
+                #axs[0].scatter(x, y, c = "green", linewidths=7)
+                #axs[1].scatter(x, y, c = "green", linewidths=7)
 
             axs[0].scatter(x_max, y_max, c = "black", linewidths = 5)
-            axs[1].scatter(x_max, y_max, c = "black", linewidths = 5)
 
             plt.axis("off")
             plt.show()

@@ -248,7 +248,7 @@ if __name__ == "__main__":
         writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
         writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
-        print("SPS:", (global_step / (time.time() - start_time)))#, "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
+        print("SPS:", (global_step / (time.time() - start_time)), "Global step:", global_step)#, "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
         writer.add_scalar("performance/episodic_return", np.mean(episodic_returns), global_step)

@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF
 import warnings
 from tqdm import tqdm
 from itertools import product
@@ -141,7 +142,7 @@ class GP:
         if self.original_dims.shape[0] == 2:
             images = {}
             name_string = f"{self.names[0]} vs {self.names[1]} - Mean"
-            images[name_string] = self._render_2d(self.original_dims[0], self.original_dims[1], self.mean, name_string, 0, 1)
+            images[name_string] = self._render_2d(self.original_dims[0], self.original_dims[1], self.mean, self.names[0], self.names[1], 0, 1)
             return images
 
     def _render_3d(self):
@@ -165,6 +166,20 @@ class GP:
         fig.canvas.draw()
         arr = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
         data = arr.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        plt.show()
         plt.close('all')
         plt.cla()
         return data
+    
+
+
+if __name__ == "__main__":
+    x = np.array([[0, 0], [0.5, 0.7], [0.3, 0.3]])
+    y = np.array([0, 3.4, 1.5])
+    gp = GP([RBF()*1], None, ((0, 1), (0, 1)), 30, ("One", "Two"), checked_points=x, values_found=y)
+    gp.get_next_point()
+    print(gp.kernels[0].get_params())
+    print(gp.gpr.get_params())
+    img = gp.render()
+    plt.imshow(img)
+    plt.show()
