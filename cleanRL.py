@@ -55,7 +55,7 @@ def parse_args():
         help="the surrogate clipping coefficient")
     parser.add_argument("--clip-vloss", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggles whether or not to use a clipped loss for the value function, as per the paper.")
-    parser.add_argument("--ent-coef", type=float, default=0.0,
+    parser.add_argument("--ent-coef", type=float, default=0.001,
         help="coefficient of the entropy")
     parser.add_argument("--vf-coef", type=float, default=0.5,
         help="coefficient of the value function")
@@ -63,7 +63,7 @@ def parse_args():
         help="the maximum norm for the gradient clipping")
     parser.add_argument("--target-kl", type=float, default=0.3,
         help="the target KL divergence threshold")
-    parser.add_argument("--batch-size", type=float, default=32,
+    parser.add_argument("--batch-size", type=float, default=256,
         help="batch size")
     parser.add_argument("--resolution", type=int, default=30,
         help="resolution")
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     # env setup
     env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution, dims = args.dims)
 
-    agent = Agent(env.observation_space, args.dims).to(device)
+    agent = tanh_Agent(env.observation_space, args.dims).to(device)
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5, weight_decay=1e-4)
 
     # ALGO Logic: Storage setup
@@ -140,7 +140,7 @@ if __name__ == "__main__":
             logprobs[step] = logprob
 
             # TRY NOT TO MODIFY: execute the game and log data.
-            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action, True)
+            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action, False if isinstance(agent, tanh_Agent) else True)
             rewards[step] = reward.view(-1)
 
             if torch.sum(next_done) > 0:

@@ -71,14 +71,6 @@ class Agent(nn.Module):
         x = torch.concatenate((x, time.unsqueeze(1)), dim = 1)
         action_mean = self.action_mean(x) #Batch dim, (Mean, Std), (x, y, z)
         action_std = torch.exp(self.action_logstd(x))
-        if torch.any(torch.isnan(x)):
-            print("Found", torch.isnan(x).sum(), "NaNs in action mean")
-            print("Max in observation:", torch.max(observations))
-        if torch.any(torch.isnan(action_mean)):
-            print("Found", torch.isnan(action_mean).sum(), "NaNs in action mean")
-        if torch.any(torch.isnan(action_std)):
-            print("Max found in x:", torch.max(x))
-            print("Found", torch.isnan(action_std).sum(), "NaNs in action std")
 
         x = self.critic_cnn(observations)
         x = torch.concatenate((x, time.unsqueeze(1)), dim = 1)
