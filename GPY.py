@@ -1,14 +1,14 @@
 import numpy as np
 from itertools import product
 import gpytorch
-from gpytorch.kernels import RBFKernel, MaternKernel, CosineKernel, PolynomialKernel
+from gpytorch.kernels import RBFKernel, MaternKernel, CosineKernel, PolynomialKernel, LinearKernel
 import torch
 
 class ExactGPModel(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood, batch_size, kernel):
+    def __init__(self, train_x, train_y, likelihood, batch_size, kernel, dims):
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([batch_size]))
-        self.covar_module = gpytorch.kernels.ScaleKernel(kernel(batch_shape=torch.Size([batch_size], ard_num_dims = 2)), batch_shape=torch.Size([batch_size]))
+        self.covar_module = gpytorch.kernels.ScaleKernel(kernel(batch_shape=torch.Size([batch_size], ard_num_dims = dims)), batch_shape=torch.Size([batch_size]))
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -22,7 +22,7 @@ class GP:
         #TODO: REWRITE TO WORK FROM 0-1 OR SOMETHING
         self.training_iters = training_iters
         self.learning_rate = learning_rate
-        self.kernels = kernels if kernels is not None else [MaternKernel, RBFKernel]
+        self.kernels = kernels if kernels is not None else [RBFKernel]
         self.verbose = verbose
         self.resolution = resolution
         self.min_, self.max_ = domain[0], domain[1]
@@ -49,7 +49,7 @@ class GP:
 
     def _get_model(self, kernel, x, y):
         likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]]))
-        model = ExactGPModel(x, y, likelihood, x.shape[0], kernel).to(self.device)
+        model = ExactGPModel(x, y, likelihood, x.shape[0], kernel, self.dims).to(self.device)
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)  # Includes GaussianLikelihood parameters
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
         model.train()
@@ -99,7 +99,7 @@ class GP:
         self.std = observed_pred.stddev
         _, self.upper_confidence = observed_pred.confidence_region()
 
-        return self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))), self.upper_confidence.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
+        return self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))), self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
     
 
 if __name__ == "__main__":
