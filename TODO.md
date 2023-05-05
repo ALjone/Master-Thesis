@@ -7,3 +7,6 @@ Se mer på random functions, tune de bra
 Pix2Pix! (Men kvisleis?)
 
 Skrive en visualiserings-ting, som viser både action, distanse fra forrige/alle, og critic
+
+
+Legge til "Use GP" i Batched env, samt device

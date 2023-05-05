@@ -25,12 +25,12 @@ class RandomFunction:
                                 "p": rand(self.range[0], self.range[1], size=(self.batch_size))}
             
         x = torch.linspace(self.range[0], self.range[1], self.resolution)
-        self.x = torch.repeat_interleave(x, self.batch_size).reshape(-1, self.batch_size).to(torch.device("cuda"))
-        self.zeros = torch.zeros((self.batch_size)).to(torch.device("cuda"))
+        self.x = torch.repeat_interleave(x, self.batch_size).reshape(-1, self.batch_size).to(torch.device("cpu"))
+        self.zeros = torch.zeros((self.batch_size)).to(torch.device("cpu"))
 
-        self.matrix = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
-        self.max = torch.zeros((batch_size)).to(torch.device("cuda"))
-        self.min = torch.zeros((batch_size)).to(torch.device("cuda"))
+        self.matrix = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cpu"))
+        self.max = torch.zeros((batch_size)).to(torch.device("cpu"))
+        self.min = torch.zeros((batch_size)).to(torch.device("cpu"))
         
         self.reset()
 
@@ -58,7 +58,7 @@ class RandomFunction:
         noise = np.random.normal(loc=1, scale=self.noise_scale, size=(tuple(self.resolution for _ in range(self.dims)) + (idx.shape[0], )))
         noise = gaussian_filter(noise, sigma=self.noise_correlation) # adjust sigma to control the amount of correlation
 
-        return torch.tensor(noise).to(torch.device("cuda"))
+        return torch.tensor(noise).to(torch.device("cpu"))
     
     def _make_matrix(self, idx):
         if self.dims == 3:
@@ -80,7 +80,7 @@ class RandomFunction:
         matrix = matrix * noise
         matrix += -1*(torch.amin(matrix, dim = (0, 1)))
         matrix = matrix/torch.amax(matrix, dim = (0, 1))
-        self.max[idx] = torch.ones((len(idx), )).to(torch.device("cuda"))
+        self.max[idx] = torch.ones((len(idx), )).to(torch.device("cpu"))
         assert len(self.max.shape) == 1, f"Expected max to have one dimension, found: {self.max.shape}"
         self.min[idx] = torch.amin(matrix, dim = (0, 1))
 
@@ -107,7 +107,7 @@ class RandomFunction:
 
         matrix = matrix * noise
         matrix = matrix/torch.amax(matrix, dim = (0, 1, 2))
-        self.max[idx] = torch.ones((len(idx), )).to(torch.device("cuda"))#torch.amax(matrix, dim = (0, 1, 2))
+        self.max[idx] = torch.ones((len(idx), )).to(torch.device("cpu"))#torch.amax(matrix, dim = (0, 1, 2))
         assert len(self.max.shape) == 1, f"Expected max to have one dimension, found: {self.max.shape}"
         self.min[idx] = torch.amin(matrix, dim = (0, 1, 2))
 
