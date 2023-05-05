@@ -16,16 +16,29 @@ class Agent(nn.Module):
         super().__init__()
         # We assume CxHxW images (channels first)
         # Re-ordering will be done by pre-preprocessing or wrapper
+        if dims == 3:
+            conv = nn.Conv3d
+        elif dims == 2:
+            conv = nn.Conv2d
+        else: 
+            raise ValueError("Only dims = 2 or dims = 3 is currently supported")
+        
         self.actor_cnn = nn.Sequential(
-            nn.Conv3d(3, 8, kernel_size=4, stride=1),
+            conv(3, 32, kernel_size=4, stride=1),
             nn.ReLU(),
-            nn.Conv3d(8, 8, kernel_size=4, stride=1),
+            conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),
-            nn.Conv3d(8, 8, kernel_size=4, stride=1),
+            conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),
-            nn.Conv3d(8, 8, kernel_size=4, stride=1),
+            conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),
-            nn.Conv3d(8, 8, kernel_size=4, stride=1),
+            conv(32, 32, kernel_size=4, stride=1),
+            nn.ReLU(),
+            conv(32, 32, kernel_size=4, stride=1),
+            nn.ReLU(),
+            conv(32, 32, kernel_size=4, stride=1),
+            nn.ReLU(),
+            conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),
             nn.Flatten(),
         )
@@ -33,26 +46,45 @@ class Agent(nn.Module):
         # Compute shape by doing one forward pass
         with torch.no_grad():
             n_flatten = self.actor_cnn(
-                torch.as_tensor(observation_space.sample()[None]).float()
+                torch.as_tensor(observation_space.sample()[0, None]).float()
             ).shape[1]+1
 
-        self.action_mean = nn.Linear(n_flatten, dims)
-        self.action_logstd = nn.Parameter(torch.ones(dims, ))#nn.Linear(n_flatten, 3)
+        self.action_mean = nn.Sequential(nn.Linear(n_flatten, 128),
+                                         nn.ReLU(),
+                                         nn.Linear(128, 64),
+                                         nn.ReLU(),
+                                         nn.Linear(64, dims))
+        self.action_logstd = nn.Sequential(nn.Linear(n_flatten, 128),
+                                         nn.ReLU(),
+                                         nn.Linear(128, 64),
+                                         nn.ReLU(),
+                                         nn.Linear(64, dims))#nn.Parameter(torch.ones((dims, ))*0.2)#nn.Linear(n_flatten, 3)
 
         self.critic_cnn = nn.Sequential(
-            nn.Conv3d(3, 8, kernel_size=4, stride=1),
+            conv(3, 32, kernel_size=4, stride=1),
             nn.ReLU(),
-            nn.Conv3d(8, 8, kernel_size=4, stride=1),
+            conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),
-            nn.Conv3d(8, 8, kernel_size=4, stride=1),
+            conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),
-            nn.Conv3d(8, 8, kernel_size=4, stride=1),
+            conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),
-            nn.Conv3d(8, 8, kernel_size=4, stride=1),
+            conv(32, 32, kernel_size=4, stride=1),
+            nn.ReLU(),
+            conv(32, 32, kernel_size=4, stride=1),
+            nn.ReLU(),
+            conv(32, 32, kernel_size=4, stride=1),
+            nn.ReLU(),
+            conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),
             nn.Flatten(),
         )
-        self.critic = nn.Linear(n_flatten, 1)
+
+        self.critic = nn.Sequential(nn.Linear(n_flatten, 128),
+                                         nn.ReLU(),
+                                         nn.Linear(128, 64),
+                                         nn.ReLU(),
+                                         nn.Linear(64, 1))
 
         print("Running with", self.count_parameters(), "parameters")
 
@@ -64,16 +96,7 @@ class Agent(nn.Module):
         action_mean = self.action_mean(x) #Batch dim, (Mean, Std), (x, y, z)
         action_std = torch.exp(self.action_logstd(x))
 
-        if torch.any(torch.isnan(x)):
-            print("Found", torch.isnan(x).sum(), "NaNs in action mean")
-            print("Max in observation:", torch.max(observations))
-        if torch.any(torch.isnan(action_mean)):
-            print("Found", torch.isnan(action_mean).sum(), "NaNs in action mean")
-        if torch.any(torch.isnan(action_std)):
-            print("Max found in x:", torch.max(x))
-            print("Found", torch.isnan(action_std).sum(), "NaNs in action std")
-
-        x = self.critic_cnn(x)
+        x = self.critic_cnn(observations)
         x = torch.concatenate((x, time.unsqueeze(1)), dim = 1)
         critic_output = self.critic(x)
 
