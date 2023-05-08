@@ -17,10 +17,10 @@ def EI(u, std, biggest, e = 0.01):
     Z = (u-biggest-e)/std
     return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
 
-def run():
+def run(T, max_length = None):
     resolution = 30
     domain = (-1, 1)
-    env = BlackBox(resolution, domain = domain, batch_size=2, num_init_points=2, dims = 2, use_GP = False, T = 60)
+    env = BlackBox(resolution, domain = domain, batch_size=2, num_init_points=2, dims = 2, use_GP = False, T = T)
     env.reset()
     checked_points = env.actions_for_gp[0, :2]
     value_points = env.values_for_gp[0, :2]
@@ -41,6 +41,8 @@ def run():
         #print(sklearn.checked_points)
         #sklearn.render()
         #print()
+        if max_length is not None and env.batch_step[0] > max_length:
+            break
 
     r = info["episodic_returns"][0]
     length = info["episodic_length"][0]
@@ -49,17 +51,14 @@ def run():
     return r, length, peak
 
 
-#gpy = gpyGP()
-reward = 0
-length = 0
-peak = 0
-n = 200
-for i in tqdm(range(n), disable=False):
-    r, l, p = run()
-    #print("Reward:", r.item(), "Length:", l.item(), "Peak:", p.item(), "\n")
-    reward += r
-    length += l
-    peak += p
+def baseline_sklearn(T, n, max_length = None):
+    reward = 0
+    length = 0
+    peak = 0
+    for _ in tqdm(range(n), disable=False, desc="Baselining sklearn", leave = False):
+        r, l, p = run(T, max_length = max_length)
+        reward += r
+        length += l
+        peak += p
 
-
-print("Reward:", round((reward/n).item(), 4), "Length:", round((length/n).item()-2, 4), "Peak:", round((peak/n).item(), 4))
+    print("\tReward:", round((reward/n).item(), 4), "Length:", round((length/n).item()-2, 4), "Peak:", round((peak/n).item(), 4))
