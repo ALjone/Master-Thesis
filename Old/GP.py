@@ -73,7 +73,17 @@ class GP:
         #Save best GPR
         self.gpr: GaussianProcessRegressor = scores[-1][1]
         warnings.simplefilter('always')
-        return self._predict_matrix()
+
+        self._predict_matrix()
+        best_point = None
+        best_ei = -np.inf
+        for i in range(self.mean.shape[0]):
+            for j in range(self.mean.shape[1]):
+                ei = self.acquisition(self.mean[i,j], self.std[i,j], self.biggest)
+                if ei > best_ei:
+                    best_point = (i,j)
+                    best_ei = ei
+        return best_point
 
     def _predict_matrix(self):
 
@@ -82,7 +92,7 @@ class GP:
         self.std = np.zeros([self.resolution for _ in range(self.transformed_dims.shape[0])])
 
         points = product(range(self.resolution), repeat = self.transformed_dims.shape[0])
-        for ijk_point in tqdm(points, leave = False, disable=~self.use_tqdm, desc = "Predicting mean matrix"):
+        for ijk_point in tqdm(points, leave = False, disable=~self.use_tqdm, desc = "Predicting mean matrix"):      
             point = np.array([self.transformed_dims[i, p] for i, p in enumerate(ijk_point)]).reshape(1, -1)
             mean, std = self.gpr.predict(point, return_std=True)
 
@@ -154,15 +164,21 @@ class GP:
         return images
 
     def _render_2d(self, x, y, points, x_name, y_name, ax_1, ax_2):
+        plt.close()
+        plt.cla()
         fig, axs = plt.subplots()
         img = axs.contourf(x, y, points, 1000)
-        axs.scatter((self.checked_points[:, ax_1]), (self.checked_points[:, ax_2]), c = "black")
-        axs.scatter((self.initial_points[:, ax_1]), (self.initial_points[:, ax_2]), c = "red")
-        axs.scatter(self.biggest_coords[ax_1], self.biggest_coords[ax_2], c = "blue")
+        axs.scatter((self.checked_points[:, ax_1]), (self.checked_points[:, ax_2]), c = "red")
+        #axs.scatter((self.initial_points[:, ax_1]), (self.initial_points[:, ax_2]), c = "red")
+        #axs.scatter(self.biggest_coords[ax_1], self.biggest_coords[ax_2], c = "black")
         axs.set_xlabel(x_name)
         axs.set_ylabel(y_name)
         axs.set_title(f"{x_name} vs {y_name} - Mean")
         plt.colorbar(img, ax = axs)
+        plt.show()
+        plt.close()
+        plt.cla()
+        return
         fig.canvas.draw()
         arr = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
         data = arr.reshape(fig.canvas.get_width_height()[::-1] + (3,))

@@ -91,7 +91,7 @@ if __name__ == "__main__":
     #torch.manual_seed(args.seed)
     #torch.backends.cudnn.deterministic = args.torch_deterministic
 
-    device = torch.device("cuda")
+    device = torch.device("cpu")
 
     # env setup
     env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution, dims = args.dims)

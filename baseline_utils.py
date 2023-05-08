@@ -4,12 +4,12 @@ from tqdm import tqdm
 import gym
 from stable_baselines3 import PPO
 
-def find_average_for_start_points(env: gym.Env, sims = 10000):
+def find_average_for_start_points(env: BlackBox, sims = 100):
 
     R = 0
     for _ in tqdm(range(sims), leave=False, desc="Average value"):
         env.reset()
-        R += env.previous_closeness_to_max
+        R += torch.mean(env.previous_closeness_to_max).item()
 
     string = f"Initial points:\n\tAverage value from 2 initial points: {round(R/sims, 3)}" + "\n"
     print(string)
@@ -23,7 +23,7 @@ def benchmark(env: BlackBox, sims = 10000):
     p = []
     for _ in tqdm(range(sims), leave=False, desc = "Benchmark"):
 
-        _, r, done, info = env.step(torch.tensor(env.action_space.sample()).to(torch.device("cuda")))
+        _, r, done, info = env.step(torch.tensor(env.action_space.sample()).to(torch.device("cpu")))
         if torch.sum(done) > 0:
             R.append(torch.mean(info["episodic_returns"][done]))
             t.append(torch.mean(info["episodic_length"][done]))
@@ -31,7 +31,7 @@ def benchmark(env: BlackBox, sims = 10000):
     R = torch.mean(torch.tensor(R)).item()
     t = torch.mean(torch.tensor(t)).item()
     p = torch.mean(torch.tensor(p)).item()
-    bench_string = f"Benchmark with random agent:\n\tAverage reward: {round(R, 3)}\n\tAverage steps: {round(t, 3)}\n\tAverage portion of max {round(p, 3)}"
+    bench_string = f"Benchmark with random agent:\n\tAverage reward: {round(R, 3)}\n\tAverage steps: {round(t-2, 3)}\n\tAverage portion of max {round(p, 3)}"
     print(bench_string)
     return bench_string
 
