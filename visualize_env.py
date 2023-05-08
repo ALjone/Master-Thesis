@@ -1,7 +1,7 @@
 import torch        
 from batched_env import BlackBox
 
-env = BlackBox(40, (0, 10), 2, num_init_points=6, dims = 2, T = 100)
+env = BlackBox(40, (0, 10), 2, num_init_points=2, dims = 2, T = 100)
 
 env.render()
 

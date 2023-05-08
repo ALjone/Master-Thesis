@@ -127,7 +127,7 @@ class RandomFunction:
             dim_0 = ", ".join([f"{key}: {round(item[i].item(), 4)}" for key, item in self.params[0].items()])
             dim_1 = ", ".join([f"{key}: {round(item[i].item(), 4)}" for key, item in self.params[1].items()])
             plt.title(f"Dim 0: {dim_0} \nDim 1: {dim_1}")
-            plt.imshow(matrix[i].squeeze().cuda().numpy())
+            plt.imshow(matrix[i].squeeze().cpu().numpy())
             plt.colorbar()
             plt.show()
             plt.cla()

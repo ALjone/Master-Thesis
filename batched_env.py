@@ -292,16 +292,17 @@ class BlackBox():
             max_coords = torch.argmax(self.func_grid[batch_idx]).item()
             y_max, x_max = divmod(max_coords, self.resolution)
 
-            for elem in self.actions_for_gp[batch_idx, :self.num_init_points+1]:
+            for elem in self.actions_for_gp[batch_idx, self.num_init_points:]:
+                a = self._find_indices(elem.unsqueeze(0)).squeeze()
+                y, x = a[0], a[1]
+                axs[0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7)
+
+            for elem in self.actions_for_gp[batch_idx, :self.num_init_points]:
                 a = self._find_indices(elem.unsqueeze(0)).squeeze()
                 y, x = a[0], a[1]
                 axs[0].scatter(x.cpu(), y.cpu(), c = "red", linewidths=7)
 
 
-            for elem in self.actions_for_gp[batch_idx, self.num_init_points+1:]:
-                a = self._find_indices(elem.unsqueeze(0)).squeeze()
-                y, x = a[0], a[1]
-                axs[0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7)
 
             #TODO: Fix this..
             #y, x = self.actions_for_gp[batch_idx, -1].cpu()
@@ -311,6 +312,8 @@ class BlackBox():
                 #axs[1].scatter(x, y, c = "green", linewidths=7)
 
             axs[0].scatter(x_max, y_max, c = "black", linewidths = 5)
+            self._get_closeness_to_max()
+            fig.suptitle(f"Percent of max at best guess: {round(self._get_closeness_to_max()[0].item(), 3)}\nPercent of max at last guess: {round(self.previous_closeness_to_max[0].item(), 3)}")
 
             plt.axis("off")
             plt.show()
