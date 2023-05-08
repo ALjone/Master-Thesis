@@ -103,6 +103,19 @@ class GP:
 
         return self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))), self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
     
+    def get_next_point(self, acquisition, biggest):
+        best_point = None
+        best_ei = -np.inf
+        mean = self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
+        std = self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
+        for i in range(mean.shape[1]):
+            for j in range(mean.shape[2]):
+                ei = acquisition(mean[0, i,j], std[0, i,j], biggest)
+                if ei > best_ei:
+                    best_point = (i,j)
+                    best_ei = ei
+        return best_point
+    
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
