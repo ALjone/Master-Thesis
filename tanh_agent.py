@@ -1,8 +1,12 @@
 import torch
 import torch.nn as nn
 from gym import spaces
-from torch.distributions import Normal, Beta
+from torch.distributions import Normal
 import numpy as np
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.stats as stats
+import math
 
 
 class Agent(nn.Module):
@@ -14,8 +18,7 @@ class Agent(nn.Module):
 
     def __init__(self, observation_space: spaces.Box, dims = 3):
         super().__init__()
-        # We assume CxHxW images (channels first)
-        # Re-ordering will be done by pre-preprocessing or wrapper
+        self.dims = dims
         if dims == 3:
             conv = nn.Conv3d
         elif dims == 2:
@@ -111,9 +114,7 @@ class Agent(nn.Module):
         
         action_mean, action_std, critic_output = self(img, time)
 
-        std = action_std.exp()
-
-        normal = Normal(action_mean, std)
+        normal = Normal(action_mean, action_std)
         x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
         
         if action is None:
@@ -122,9 +123,20 @@ class Agent(nn.Module):
         log_prob -= torch.log(1.0 - action.pow(2) + 1e-8)
         log_prob = log_prob.sum(1)
 
-        return action, log_prob, normal.entropy().sum(1), critic_output
+        return action, log_prob, normal.entropy().sum(1), critic_output, action_std
     
 
     def count_parameters(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
     
+    def visualize_dist(self, img, t):
+        action_mean, action_std, _ = self(img, t)
+        for mu, variance in zip(action_mean[0].squeeze().cpu().numpy(), action_std[0].squeeze().cpu().numpy()):
+            plt.cla()
+            plt.close()
+            sigma = variance
+            print("Variance:", sigma)
+            print("Mu:", mu)
+            x = np.linspace(mu - 3*sigma, mu + 3*sigma, 100)
+            plt.plot(x, np.tanh(stats.norm.pdf(x, mu, sigma)))
+            plt.show()

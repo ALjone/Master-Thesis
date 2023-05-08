@@ -55,7 +55,7 @@ def parse_args():
         help="the surrogate clipping coefficient")
     parser.add_argument("--clip-vloss", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggles whether or not to use a clipped loss for the value function, as per the paper.")
-    parser.add_argument("--ent-coef", type=float, default=0.001,
+    parser.add_argument("--ent-coef", type=float, default=0,
         help="coefficient of the entropy")
     parser.add_argument("--vf-coef", type=float, default=0.5,
         help="coefficient of the value function")
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution, dims = args.dims)
 
     agent = tanh_Agent(env.observation_space, args.dims).to(device)
-    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5, weight_decay=1e-4)
+    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
 
     # ALGO Logic: Storage setup
     img_obs = torch.zeros((args.num_steps, ) + env.observation_space.shape).to(device)
@@ -107,6 +107,7 @@ if __name__ == "__main__":
     rewards = torch.zeros((args.num_steps, args.batch_size)).to(device)
     dones = torch.zeros((args.num_steps, args.batch_size)).to(device)
     values = torch.zeros((args.num_steps, args.batch_size)).to(device)
+    stds = torch.zeros((args.num_steps, args.batch_size)).to(device)
 
     # TRY NOT TO MODIFY: start the game
     global_step = 0
@@ -134,10 +135,11 @@ if __name__ == "__main__":
 
             # ALGO LOGIC: action logic
             with torch.no_grad():
-                action, logprob, _, value = agent.get_action_and_value(next_img_obs, next_time_obs)
+                action, logprob, _, value, std = agent.get_action_and_value(next_img_obs, next_time_obs)
                 values[step] = value.flatten()
             actions[step] = action
             logprobs[step] = logprob
+            stds[step] = torch.mean(std, dim = 1) #Save the std just for reporting
 
             # TRY NOT TO MODIFY: execute the game and log data.
             (next_img_obs, next_time_obs), reward, next_done, info = env.step(action, False if isinstance(agent, tanh_Agent) else True)
@@ -186,7 +188,7 @@ if __name__ == "__main__":
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
 
-                _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_img_obs[mb_inds], b_time_obs[mb_inds], b_actions.long()[mb_inds])
+                _, newlogprob, entropy, newvalue, _ = agent.get_action_and_value(b_img_obs[mb_inds], b_time_obs[mb_inds], b_actions.long()[mb_inds])
                 logratio = newlogprob - b_logprobs[mb_inds]
                 ratio = logratio.exp()
 
@@ -238,6 +240,7 @@ if __name__ == "__main__":
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         writer.add_scalar("charts/average_action", torch.mean(actions).item(), global_step)
+        writer.add_scalar("charts/action_std", torch.std(stds).item(), global_step)
         writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
         writer.add_scalar("charts/max_observation", next_img_obs.max(), global_step)
         writer.add_scalar("charts/min_observation", next_img_obs.min(), global_step)

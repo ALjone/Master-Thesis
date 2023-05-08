@@ -19,7 +19,6 @@ class ExactGPModel(gpytorch.models.ExactGP):
 class GP:
     def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 50, dims = 3) -> None:
 
-        #TODO: REWRITE TO WORK FROM 0-1 OR SOMETHING
         self.training_iters = training_iters
         self.learning_rate = learning_rate
         self.kernels = kernels if kernels is not None else [RBFKernel]
