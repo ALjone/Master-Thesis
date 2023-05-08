@@ -11,7 +11,7 @@ from scipy.stats import norm
 from utils import rand
 
 class BlackBox():
-    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 2, T = 60, kernels = None, dims = 3, use_GP = True):
+    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 2, T = 60, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 50):
         #TODO: Make it take in a device...
         #TODO: Add printing info
         assert batch_size > 1, "Currently only batch size bigger than 1 supported. "
@@ -48,27 +48,27 @@ class BlackBox():
         self.names = [str(i) for i in range(len(domain)//2)]
 
 
-        self.time = torch.zeros(batch_size).to(torch.device("cpu"))
-        self.grid = torch.zeros(self.observation_space.shape, dtype = torch.float32).to(torch.device("cpu"))
+        self.time = torch.zeros(batch_size).to(torch.device("cuda"))
+        self.grid = torch.zeros(self.observation_space.shape, dtype = torch.float32).to(torch.device("cuda"))
         self.params_for_time = {}
         for dim in range(dims):
-            self.params_for_time[dim] = rand(1, 2, size=(self.batch_size, )).to(torch.device("cpu"))
-        self.params_for_time["constant"] = rand(2, 4, size=(self.batch_size, )).to(torch.device("cpu"))
+            self.params_for_time[dim] = rand(1, 2, size=(self.batch_size, )).to(torch.device("cuda"))
+        self.params_for_time["constant"] = rand(2, 4, size=(self.batch_size, )).to(torch.device("cuda"))
 
-        self.max_time = self._t(torch.full_like(torch.zeros((batch_size, dims)), self.x_max).to(torch.device("cpu")), idx = torch.arange(start=0, end=batch_size)).to(torch.device("cpu"))
+        self.max_time = self._t(torch.full_like(torch.zeros((batch_size, dims)), self.x_max).to(torch.device("cuda")), idx = torch.arange(start=0, end=batch_size)).to(torch.device("cuda"))
         assert self.max_time.shape[0] == batch_size
 
-        self.actions_for_gp = torch.zeros((batch_size, 50, dims)).to(torch.device("cpu"))
-        self.values_for_gp = torch.zeros((batch_size, 50)).to(torch.device("cpu"))
-        self.batch_step = torch.zeros((batch_size)).to(torch.long).to(torch.device("cpu")) #The tracker for what step each "env" is at 
-        self.best_prediction = torch.zeros((batch_size)).to(torch.device("cpu")) #Assumes all predictions are positive
-        self.previous_closeness_to_max = torch.zeros((batch_size)).to(torch.device("cpu"))
+        self.actions_for_gp = torch.zeros((batch_size, 50, dims)).to(torch.device("cuda"))
+        self.values_for_gp = torch.zeros((batch_size, 50)).to(torch.device("cuda"))
+        self.batch_step = torch.zeros((batch_size)).to(torch.long).to(torch.device("cuda")) #The tracker for what step each "env" is at 
+        self.best_prediction = torch.zeros((batch_size)).to(torch.device("cuda")) #Assumes all predictions are positive
+        self.previous_closeness_to_max = torch.zeros((batch_size)).to(torch.device("cuda"))
 
         if self.use_GP:
-            self.GP = GP(kernels, batch_size, domain, self.resolution, dims=dims)
-        self.idx = torch.arange(start = 0, end = self.batch_size).to(torch.device("cpu"))
+            self.GP = GP(kernels, batch_size, domain, self.resolution, dims=dims, learning_rate=GP_learning_rate, training_iters=GP_training_iters)
+        self.idx = torch.arange(start = 0, end = self.batch_size).to(torch.device("cuda"))
 
-        self.episodic_returns = torch.zeros((batch_size)).to(torch.device("cpu"))
+        self.episodic_returns = torch.zeros((batch_size)).to(torch.device("cuda"))
 
         self.reset()
 
@@ -91,7 +91,7 @@ class BlackBox():
         for dim in range(self.dims):
             act = (action[:, dim]-self.x_min)/x_range
             res += self.params_for_time[dim][idx]*act
-        res += self.params_for_time["constant"][idx] + torch.normal(0, 0.1, size = (idx.shape[0], )).to(torch.device("cpu"))
+        res += self.params_for_time["constant"][idx] + torch.normal(0, 0.1, size = (idx.shape[0], )).to(torch.device("cuda"))
 
         return res
 
@@ -100,7 +100,7 @@ class BlackBox():
             return
         #raise NotImplementedError("Needs to circumvent step, to only check init points for idx")
         for i in range(self.num_init_points):
-            action = torch.tensor(self.action_space.sample()).to(torch.device("cpu")) #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cpu"))
+            action = torch.tensor(self.action_space.sample()).to(torch.device("cuda")) #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
             if len(action.shape) == 1: action = action.unsqueeze(0)
             #Transform from -1 to 1 -> current domain
             act = self._transform_actions([action[idx, i] for i in range(self.dims)])
@@ -149,13 +149,13 @@ class BlackBox():
         #NOTE: Max is 32827 seconds, min is 406
         for dim in range(self.dims):
             param = self.params_for_time[dim]
-            param[idx] = rand(1, 2, size=idx.shape[0]).to(torch.device("cpu"))
+            param[idx] = rand(1, 2, size=idx.shape[0]).to(torch.device("cuda"))
             self.params_for_time[dim] = param
         constant = self.params_for_time["constant"]
-        constant[idx] = rand(2, 4, size=idx.shape[0]).to(torch.device("cpu"))
+        constant[idx] = rand(2, 4, size=idx.shape[0]).to(torch.device("cuda"))
         self.params_for_time["constant"]
 
-        self.max_time[idx] = self._t(torch.full_like(torch.zeros((len(idx), self.dims)), self.x_max).to(torch.device("cpu")), idx)
+        self.max_time[idx] = self._t(torch.full_like(torch.zeros((len(idx), self.dims)), self.x_max).to(torch.device("cuda")), idx)
 
         self.function_generator.reset(idx)
         self.func_grid = self.function_generator.matrix
@@ -210,7 +210,7 @@ class BlackBox():
         output = []
         for a in action:
             output.append(self._transform_action(a, self.x_max, self.x_min))
-        return torch.stack(output, dim = 1).to(torch.device("cpu"))
+        return torch.stack(output, dim = 1).to(torch.device("cuda"))
         return self._transform_action(x, self.x_max, self.x_min), self._transform_action(y, self.x_max, self.x_min), self._transform_action(z, self.x_max, self.x_min)
 
     def step(self, action, transform = False) -> Tuple[torch.Tensor, float, bool]:

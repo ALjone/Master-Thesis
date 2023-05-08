@@ -6,7 +6,7 @@ import torch
 from scipy.stats import norm
 from tqdm import tqdm
 def make_action(action):
-    return torch.stack((torch.tensor(action), torch.tensor([0.12, 0.31])), dim = 0).to(torch.device("cpu"))
+    return torch.stack((torch.tensor(action), torch.tensor([0.12, 0.31])), dim = 0).to(torch.device("cuda"))
 
 
 

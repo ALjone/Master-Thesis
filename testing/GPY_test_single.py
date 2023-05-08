@@ -13,11 +13,11 @@ class ExactGPModel(gpytorch.models.ExactGP):
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
         
 
-x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).to(torch.device("cpu"))
-y = torch.tensor([0, 3.4, 1.5]).to(torch.device("cpu"))
+x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).to(torch.device("cuda"))
+y = torch.tensor([0, 3.4, 1.5]).to(torch.device("cuda"))
 
 likelihood = gpytorch.likelihoods.GaussianLikelihood()
-model = ExactGPModel(x, y, likelihood).to(torch.device("cpu"))
+model = ExactGPModel(x, y, likelihood).to(torch.device("cuda"))
 
 # Find optimal model hyperparameters
 model.train()
@@ -50,7 +50,7 @@ test_y = torch.linspace(0, 1, 30)
 test_xx, test_yy = torch.meshgrid(test_x, test_y, indexing="ij")
 test_xx = test_xx.reshape(-1, 1)
 test_yy = test_yy.reshape(-1, 1)
-points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cpu"))
+points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda"))
 model.eval()
 print(model.covar_module)
 likelihood.eval()

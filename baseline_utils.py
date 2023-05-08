@@ -23,7 +23,7 @@ def benchmark(env: BlackBox, sims = 10000):
     p = []
     for _ in tqdm(range(sims), leave=False, desc = "Benchmark"):
 
-        _, r, done, info = env.step(torch.tensor(env.action_space.sample()).to(torch.device("cpu")))
+        _, r, done, info = env.step(torch.tensor(env.action_space.sample()).to(torch.device("cuda")))
         if torch.sum(done) > 0:
             R.append(torch.mean(info["episodic_returns"][done]))
             t.append(torch.mean(info["episodic_length"][done]))
