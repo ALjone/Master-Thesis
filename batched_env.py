@@ -11,7 +11,7 @@ from scipy.stats import norm
 from utils import rand
 
 class BlackBox():
-    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 2, T = 60, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 50):
+    def __init__(self, resolution = 40, domain = [0, 10], batch_size = 128, num_init_points = 2, T = 60, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 50, approximate = True):
         #TODO: Make it take in a device...
         #TODO: Add printing info
         assert batch_size > 1, "Currently only batch size bigger than 1 supported. "
@@ -65,7 +65,7 @@ class BlackBox():
         self.previous_closeness_to_max = torch.zeros((batch_size)).to(torch.device("cuda"))
 
         if self.use_GP:
-            self.GP = GP(kernels, batch_size, domain, self.resolution, dims=dims, learning_rate=GP_learning_rate, training_iters=GP_training_iters)
+            self.GP = GP(kernels, batch_size, domain, self.resolution, dims=dims, learning_rate=GP_learning_rate, training_iters=GP_training_iters, approximate=approximate)
         self.idx = torch.arange(start = 0, end = self.batch_size).to(torch.device("cuda"))
 
         self.episodic_returns = torch.zeros((batch_size)).to(torch.device("cuda"))
