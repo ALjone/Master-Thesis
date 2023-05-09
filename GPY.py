@@ -1,5 +1,7 @@
 import numpy as np
 from itertools import product
+from gpytorch.variational import CholeskyVariationalDistribution
+from gpytorch.variational import VariationalStrategy
 import gpytorch
 from gpytorch.kernels import RBFKernel, MaternKernel, CosineKernel, PolynomialKernel, LinearKernel
 import torch
@@ -15,9 +17,24 @@ class ExactGPModel(gpytorch.models.ExactGP):
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
     
+class ApproximateGPModel(gpytorch.models.ApproximateGP):
+    def __init__(self, train_x, batch_size, kernel, dims):
+        variational_distribution = CholeskyVariationalDistribution(train_x.size(1), batch_shape=torch.Size([batch_size]))
+        variational_strategy = VariationalStrategy(
+            self, train_x, variational_distribution, learn_inducing_locations=True
+        )
+        super(ApproximateGPModel, self).__init__(variational_strategy)
+        self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([batch_size]))
+        self.covar_module = gpytorch.kernels.ScaleKernel(kernel(batch_shape=torch.Size([batch_size], ard_num_dims = dims)), batch_shape=torch.Size([batch_size]))
+
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
+    
 
 class GP:
-    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 50, dims = 3) -> None:
+    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 50, dims = 3, approximate = True) -> None:
 
         #TODO: REWRITE TO WORK FROM 0-1 OR SOMETHING
 
@@ -31,6 +48,7 @@ class GP:
         self.device = torch.device("cpu")
         self.dims = dims
         self.batch_size = batch_size
+        self.approximate = approximate
 
         vectors = [torch.linspace(self.min_, self.max_, self.resolution) for _ in range(dims)]
 
@@ -51,7 +69,11 @@ class GP:
 
     def _get_model(self, kernel, x, y):
         likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]]))
-        model = ExactGPModel(x, y, likelihood, x.shape[0], kernel, self.dims).to(self.device)
+        if self.approximate:
+            model = ApproximateGPModel(x, x.shape[0], kernel, self.dims)
+        else:
+            model = ExactGPModel(x, y, likelihood, x.shape[0], kernel, self.dims).to(self.device)
+            
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)  # Includes GaussianLikelihood parameters
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
         model.train()
