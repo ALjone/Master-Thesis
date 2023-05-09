@@ -47,6 +47,7 @@ def run(T, env: BlackBox, max_length = None, learning_rate = 0.1, training_iters
 
 
 def baseline_gpy(T, n, env, max_length = None, learning_rate = 0.1, training_iters = 50, use_all = False):
+    #TODO: Add std
     reward = 0
     length = 0
     peak = 0
