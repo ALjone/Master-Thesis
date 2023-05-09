@@ -7,7 +7,7 @@ for batch_size in [1, 10, 100, 1000, 10000]:
     train_x = torch.rand((batch_size, 50, 3))
     train_y = torch.mean(train_x, dim=2)
 
-    train_x, train_y = train_x.to(torch.device("cpu")), train_y.to(torch.device("cpu"))
+    train_x, train_y = train_x.to(torch.device("cuda")), train_y.to(torch.device("cuda"))
 
 
     # We will use the simplest form of GP model, exact inference
@@ -24,13 +24,13 @@ for batch_size in [1, 10, 100, 1000, 10000]:
 
     # initialize likelihood and model
     likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([batch_size]))
-    model = ExactGPModel(train_x, train_y, likelihood).to(torch.device("cpu"))
+    model = ExactGPModel(train_x, train_y, likelihood).to(torch.device("cuda"))
 
     train_iters = 200
 
 
-    test_x = torch.rand((batch_size, 100, 3)).to(torch.device("cpu"))
-    test_y = torch.mean(test_x, dim=2).to(torch.device("cpu"))
+    test_x = torch.rand((batch_size, 100, 3)).to(torch.device("cuda"))
+    test_y = torch.mean(test_x, dim=2).to(torch.device("cuda"))
 
     # Get into evaluation (predictive posterior) mode
     model.eval()

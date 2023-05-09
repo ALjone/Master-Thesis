@@ -45,7 +45,7 @@ class GP:
         self.verbose = verbose
         self.resolution = resolution
         self.min_, self.max_ = domain[0], domain[1]
-        self.device = torch.device("cpu")
+        self.device = torch.device("cuda")
         self.dims = dims
         self.batch_size = batch_size
         self.approximate = approximate
@@ -65,7 +65,7 @@ class GP:
         test_xx, test_yy = torch.meshgrid(test_x, test_y, indexing="ij")
         test_xx = test_xx.reshape(-1, 1)
         test_yy = test_yy.reshape(-1, 1)
-        self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cpu")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
+        self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
 
     def _get_model(self, kernel, x, y):
         likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]]))
@@ -128,8 +128,8 @@ class GP:
     def get_next_point(self, acquisition, biggest):
         best_point = None
         best_ei = -np.inf
-        mean = self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
-        std = self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
+        mean = self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))).cpu()
+        std = self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))).cpu()
         for i in range(mean.shape[1]):
             for j in range(mean.shape[2]):
                 ei = acquisition(mean[0, i,j], std[0, i,j], biggest)
@@ -143,14 +143,14 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     batch = 2
     gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1)
-    x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
-    y = torch.tensor([0, 3.4, 1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
-    #y = torch.rand(3).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
+    x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
+    y = torch.tensor([0, 3.4, 1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
+    #y = torch.rand(3).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
 
-    #x = torch.tensor([[0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
-    #y = torch.tensor([1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
+    #x = torch.tensor([[0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
+    #y = torch.tensor([1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
 
-    idx = torch.arange(batch).to(torch.device("cpu"))
+    idx = torch.arange(batch).to(torch.device("cuda"))
 
     mean, interval = gp.get_mean_std(x, y, idx)
     plt.imshow(mean.cpu()[0])
