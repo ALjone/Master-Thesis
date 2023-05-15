@@ -18,8 +18,8 @@ class ExactGPModel(gpytorch.models.ExactGP):
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
     
 class ApproximateGPModel(gpytorch.models.ApproximateGP):
-    def __init__(self, train_x, batch_size, kernel, dims):
-        variational_distribution = CholeskyVariationalDistribution(train_x.size(1), batch_shape=torch.Size([batch_size]))
+    def __init__(self, train_x, batch_size, kernel, dims, device):
+        variational_distribution = CholeskyVariationalDistribution(train_x.size(1), batch_shape=torch.Size([batch_size])).to(device)
         variational_strategy = VariationalStrategy(
             self, train_x, variational_distribution, learn_inducing_locations=True
         )
@@ -41,7 +41,7 @@ class GP:
         #TODO: REALLY NEED TO MAKE SURE THAT ACTUALLY JUST REPEATING ONE POINT WORKS
         self.training_iters = training_iters
         self.learning_rate = learning_rate
-        self.kernels = kernels if kernels is not None else [RBFKernel]
+        self.kernels = kernels if kernels is not None else [RBFKernel, MaternKernel]
         self.verbose = verbose
         self.resolution = resolution
         self.min_, self.max_ = domain[0], domain[1]
@@ -68,9 +68,10 @@ class GP:
         self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
 
     def _get_model(self, kernel, x, y):
-        likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]]))
+        likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]])).to(self.device)
+        #likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.zeros(x.shape[1:]).to(self.device), True, batch_shape=torch.Size([x.shape[0]]))
         if self.approximate:
-            model = ApproximateGPModel(x, x.shape[0], kernel, self.dims)
+            model = ApproximateGPModel(x, x.shape[0], kernel, self.dims, self.device).to(self.device)
         else:
             model = ExactGPModel(x, y, likelihood, x.shape[0], kernel, self.dims).to(self.device)
             
@@ -109,10 +110,12 @@ class GP:
 
         return self._predict_matrix(model, likelihood, idx)
 
-    def _predict_matrix(self, model: ExactGPModel, likelihood: gpytorch.likelihoods.GaussianLikelihood, idx):        
+    def _predict_matrix(self, model: ApproximateGPModel, likelihood: gpytorch.likelihoods.GaussianLikelihood, idx):        
 
         model.eval()
         likelihood.eval()
+        likelihood.noise_covar.noise = 0.0001
+        likelihood.noise = 0.0001
 
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
             output = model(self.points[idx])
@@ -142,7 +145,7 @@ class GP:
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     batch = 2
-    gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1)
+    gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1, training_iters=200, approximate=True)
     x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     y = torch.tensor([0, 3.4, 1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     #y = torch.rand(3).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
