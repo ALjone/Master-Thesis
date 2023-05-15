@@ -11,7 +11,7 @@ best_length = None
 best_reward = None
 best_params = None
 
-lrs = [0.5, 0.1, 0.01]
+lrs = [0.1, 0.01]
 training_iters = [100, 50, 25]
 use_alls = [True, False]
 lr_dict = {lr: [] for lr in lrs}
@@ -19,13 +19,13 @@ iter_dict = {iters: [] for iters in training_iters}
 use_all_dict = {use_all: [] for use_all in use_alls}
 
 #Too low? Okay I s'pose
-n = 300
+n = 50
 T = 100
 
 resolution = 30
 domain = (-1, 1)
-env = BlackBox(resolution, domain = domain, batch_size=2, num_init_points=2, dims = 2, T = T, kernels=[RBFKernel, MaternKernel, RQKernel])
-
+env = BlackBox(resolution, domain = domain, batch_size=2, num_init_points=2, dims = 2, T = T, kernels=[RBFKernel, MaternKernel])
+env.GP.approximate = True
 for lr in lrs:
     for iters in training_iters:
         for use_all in use_alls:

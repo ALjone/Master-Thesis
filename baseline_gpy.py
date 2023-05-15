@@ -16,7 +16,7 @@ def EI(u, std, biggest, e = 0.01):
     Z = (u-biggest-e)/std
     return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
 
-def run(T, env: BlackBox, max_length = None, learning_rate = 0.1, training_iters = 50, use_all = False):
+def run(T, env: BlackBox, max_length = None, learning_rate = 0.01, training_iters = 100, use_all = False):
     """use_all: Whether to use all training points (the full 50, which includes duplicates) or just without duplicates"""
     resolution = env.resolution
     env.GP.learning_rate = learning_rate

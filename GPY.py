@@ -41,7 +41,7 @@ class GP:
         #TODO: REALLY NEED TO MAKE SURE THAT ACTUALLY JUST REPEATING ONE POINT WORKS
         self.training_iters = training_iters
         self.learning_rate = learning_rate
-        self.kernels = kernels if kernels is not None else [RBFKernel]
+        self.kernels = kernels if kernels is not None else [RBFKernel, MaternKernel]
         self.verbose = verbose
         self.resolution = resolution
         self.min_, self.max_ = domain[0], domain[1]
@@ -68,8 +68,13 @@ class GP:
         self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
 
     def _get_model(self, kernel, x, y):
+<<<<<<< HEAD
         #likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]])).to(self.device)
         likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.zeros(x.shape[1:]), batch_shape=torch.Size([x.shape[0]])).to(self.device)
+=======
+        likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]])).to(self.device)
+        #likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.zeros(x.shape[1:]).to(self.device), True, batch_shape=torch.Size([x.shape[0]]))
+>>>>>>> 7b629942a442bdd1af588e925e95ebb67eac8de9
         if self.approximate:
             model = ApproximateGPModel(x, x.shape[0], kernel, self.dims, self.device).to(self.device)
         else:
@@ -114,7 +119,12 @@ class GP:
 
         model.eval()
         likelihood.eval()
+<<<<<<< HEAD
         #likelihood.noise = 1e-4
+=======
+        likelihood.noise_covar.noise = 0.0001
+        likelihood.noise = 0.0001
+>>>>>>> 7b629942a442bdd1af588e925e95ebb67eac8de9
 
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
             output = model(self.points[idx])
@@ -144,7 +154,11 @@ class GP:
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     batch = 2
+<<<<<<< HEAD
     gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1, training_iters = 1000, approximate=True)
+=======
+    gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1, training_iters=200, approximate=True)
+>>>>>>> 7b629942a442bdd1af588e925e95ebb67eac8de9
     x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     y = torch.tensor([0, 3.4, 1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     #y = torch.rand(3).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))

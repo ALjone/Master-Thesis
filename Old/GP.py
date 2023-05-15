@@ -75,6 +75,8 @@ class GP:
         warnings.simplefilter('always')
 
         self._predict_matrix()
+        if self.acquisition is None:
+            return
         best_point = None
         best_ei = -np.inf
         for i in range(self.mean.shape[0]):
@@ -194,8 +196,8 @@ if __name__ == "__main__":
     y = np.array([0, 3.4, 1.5])
     gp = GP([RBF()*1], None, ((0, 1), (0, 1)), 30, ("One", "Two"), checked_points=x, values_found=y)
     gp.get_next_point()
-    print(gp.kernels[0].get_params())
-    print(gp.gpr.get_params())
+    #print(gp.kernels[0].get_params())
+    #print(gp.gpr.get_params())
     img = gp.render()
     plt.imshow(img)
     plt.show()
