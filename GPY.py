@@ -4,7 +4,26 @@ from gpytorch.variational import CholeskyVariationalDistribution
 from gpytorch.variational import VariationalStrategy
 import gpytorch
 from gpytorch.kernels import RBFKernel, MaternKernel, CosineKernel, PolynomialKernel, LinearKernel
+from gpytorch.priors import Prior
 import torch
+
+class RBFKernelWithPrior(gpytorch.kernels.RBFKernel):
+    def __init__(self, **kwargs):
+        super(RBFKernelWithPrior, self).__init__(**kwargs)
+        
+        # Create a length scale parameter with a prior of 1
+        self.register_parameter(
+            name="lengthscale_prior",
+            parameter=torch.nn.Parameter(torch.tensor(1.0)),
+            prior=gpytorch.priors.NormalPrior(0, 1)
+        )
+        
+    def forward(self, x1, x2, **params):
+        # Retrieve the length scale value from the prior parameter
+        lengthscale = self.lengthscale_prior.item()
+        
+        # Use the length scale value in the kernel computation
+        return super(RBFKernelWithPrior, self).forward(x1, x2, **params) * lengthscale ** 2
 
 class ExactGPModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood, batch_size, kernel, dims):
@@ -31,17 +50,17 @@ class ApproximateGPModel(gpytorch.models.ApproximateGP):
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-    
+        
 
 class GP:
-    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 200, dims = 3, approximate = True) -> None:
+    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 200, dims = 3, approximate = False) -> None:
 
         #TODO: REWRITE TO WORK FROM 0-1 OR SOMETHING
 
         #TODO: REALLY NEED TO MAKE SURE THAT ACTUALLY JUST REPEATING ONE POINT WORKS
         self.training_iters = training_iters
         self.learning_rate = learning_rate
-        self.kernels = kernels if kernels is not None else [RBFKernel, MaternKernel]
+        self.kernels = kernels if kernels is not None else [RBFKernelWithPrior]
         self.verbose = verbose
         self.resolution = resolution
         self.min_, self.max_ = domain[0], domain[1]
@@ -68,17 +87,13 @@ class GP:
         self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
 
     def _get_model(self, kernel, x, y):
-<<<<<<< HEAD
-        #likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]])).to(self.device)
-        likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.zeros(x.shape[1:]), batch_shape=torch.Size([x.shape[0]])).to(self.device)
-=======
         likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]])).to(self.device)
-        #likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.zeros(x.shape[1:]).to(self.device), True, batch_shape=torch.Size([x.shape[0]]))
->>>>>>> 7b629942a442bdd1af588e925e95ebb67eac8de9
+        #likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.zeros(x.shape[1:]), batch_shape=torch.Size([x.shape[0]])).to(self.device)
         if self.approximate:
             model = ApproximateGPModel(x, x.shape[0], kernel, self.dims, self.device).to(self.device)
         else:
-            model = ExactGPModel(x, y, likelihood, x.shape[0], kernel, self.dims).to(self.device)
+            #model = ExactGPModel(x, y, likelihood, x.shape[0], kernel, self.dims).to(self.device)
+            model = gpytorch.models.ExactGP(x, y, kernel).to(self.device)
             
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)  # Includes GaussianLikelihood parameters
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
@@ -119,12 +134,8 @@ class GP:
 
         model.eval()
         likelihood.eval()
-<<<<<<< HEAD
-        #likelihood.noise = 1e-4
-=======
-        likelihood.noise_covar.noise = 0.0001
-        likelihood.noise = 0.0001
->>>>>>> 7b629942a442bdd1af588e925e95ebb67eac8de9
+        #likelihood.noise_covar.noise = 0.0001
+        #likelihood.noise = 0.0001
 
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
             output = model(self.points[idx])
@@ -154,11 +165,7 @@ class GP:
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     batch = 2
-<<<<<<< HEAD
-    gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1, training_iters = 1000, approximate=True)
-=======
     gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1, training_iters=200, approximate=True)
->>>>>>> 7b629942a442bdd1af588e925e95ebb67eac8de9
     x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     y = torch.tensor([0, 3.4, 1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     #y = torch.rand(3).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
