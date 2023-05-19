@@ -1,10 +1,8 @@
 import numpy as np
-from itertools import product
 from gpytorch.variational import CholeskyVariationalDistribution
 from gpytorch.variational import VariationalStrategy
 import gpytorch
-from gpytorch.kernels import RBFKernel, MaternKernel, CosineKernel, PolynomialKernel, LinearKernel
-from gpytorch.priors import Prior
+from gpytorch.kernels import RBFKernel, MaternKernel#, CosineKernel, PolynomialKernel, LinearKernel
 import torch
 from matplotlib import pyplot as plt
 
@@ -52,17 +50,6 @@ class GP:
         self.dims = dims
         self.batch_size = batch_size
         self.approximate = approximate
-
-        #Doesn't work
-        """vectors = [torch.linspace(self.min_, self.max_, self.resolution) for _ in range(dims)]
-
-        # Create a meshgrid of indicesq
-        idxs = np.meshgrid(*[torch.arange(len(vec)) for vec in vectors], indexing='ij')
-
-        # Stack the indices and use them to index the original vectors
-        points = torch.column_stack([vec[idx.flatten()] for vec, idx in zip(vectors, idxs)])
-        # Reshape the result to the desired shape
-        self.points = points.repeat_interleave(batch_size, 0).reshape(batch_size, -1, dims).to(self.device)"""
 
         test_x = torch.linspace(self.min_, self.max_, self.resolution)
         test_y = torch.linspace(self.min_, self.max_, self.resolution)
@@ -122,8 +109,6 @@ class GP:
 
         model.eval()
         likelihood.eval()
-        #likelihood.noise_covar.noise = 0.0001
-        #likelihood.noise = 0.0001
 
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
             output = model(self.points[idx])

@@ -3,6 +3,7 @@ from baseline_gpy import baseline_gpy
 from gpytorch.kernels import RBFKernel, MaternKernel, RQKernel
 import warnings
 
+
 from batched_env import BlackBox
 warnings.filterwarnings("ignore")
 
@@ -19,7 +20,7 @@ iter_dict = {iters: [] for iters in training_iters}
 use_all_dict = {use_all: [] for use_all in use_alls}
 
 #Too low? Okay I s'pose
-n = 50
+n = 200
 T = 100
 
 resolution = 30

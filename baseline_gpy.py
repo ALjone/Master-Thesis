@@ -30,7 +30,7 @@ def run(T, env: BlackBox, max_length = None, learning_rate = 0.01, training_iter
         if not use_all: #Force it to update
             idx = torch.tensor((0, 1))
             batch_step = 2 if env.batch_step[0] == 1 else env.batch_step[0] #Hacky
-            env.GP.get_mean_std(env.actions_for_gp[:, :batch_step], env.values_for_gp[:, :batch_step], idx)
+            env.GP.get_mean_std(env.actions_for_gp[:, :batch_step+1], env.values_for_gp[:, :batch_step+1], idx)
         act = env.GP.get_next_point(EI, torch.max(env.values_for_gp[0]).cpu().numpy())
         next = (make_action(act)-(resolution//2))/(resolution//2)
         _, _, done, info = env.step(next, transform=False)

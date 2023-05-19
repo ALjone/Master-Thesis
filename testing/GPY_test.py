@@ -4,10 +4,17 @@ import gpytorch
 batch_size = 1000
 
 for batch_size in [1, 10, 100, 1000, 10000]: 
-    train_x = torch.rand((batch_size, 50, 3))
-    train_y = torch.mean(train_x, dim=2)
 
-    train_x, train_y = train_x.to(torch.device("cuda")), train_y.to(torch.device("cuda"))
+    # Assuming you have a list of tensors, each containing points for a batch element
+    # Example tensors with varying sizes
+    train_x = [torch.randn(n_points, 3) for n_points in [10, 15, 12]]
+
+    # Create a list of LazyTensor objects
+    #lazy_tensor_list = [gpytorch.lazy.lazy_tensor(tensor) for tensor in train_x]
+    #train_x = torch.rand((batch_size, 50, 3))
+    train_y = [torch.mean(x, dim=1) for x in train_x]
+
+    #train_x, train_y = train_x.to(torch.device("cuda")), train_y.to(torch.device("cuda"))
 
 
     # We will use the simplest form of GP model, exact inference
