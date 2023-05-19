@@ -6,24 +6,8 @@ import gpytorch
 from gpytorch.kernels import RBFKernel, MaternKernel, CosineKernel, PolynomialKernel, LinearKernel
 from gpytorch.priors import Prior
 import torch
+from matplotlib import pyplot as plt
 
-class RBFKernelWithPrior(gpytorch.kernels.RBFKernel):
-    def __init__(self, **kwargs):
-        super(RBFKernelWithPrior, self).__init__(**kwargs)
-        
-        # Create a length scale parameter with a prior of 1
-        self.register_parameter(
-            name="lengthscale_prior",
-            parameter=torch.nn.Parameter(torch.tensor(1.0)),
-            prior=gpytorch.priors.NormalPrior(0, 1)
-        )
-        
-    def forward(self, x1, x2, **params):
-        # Retrieve the length scale value from the prior parameter
-        lengthscale = self.lengthscale_prior.item()
-        
-        # Use the length scale value in the kernel computation
-        return super(RBFKernelWithPrior, self).forward(x1, x2, **params) * lengthscale ** 2
 
 class ExactGPModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood, batch_size, kernel, dims):
@@ -60,7 +44,7 @@ class GP:
         #TODO: REALLY NEED TO MAKE SURE THAT ACTUALLY JUST REPEATING ONE POINT WORKS
         self.training_iters = training_iters
         self.learning_rate = learning_rate
-        self.kernels = kernels if kernels is not None else [RBFKernelWithPrior]
+        self.kernels = kernels if kernels is not None else [RBFKernel]
         self.verbose = verbose
         self.resolution = resolution
         self.min_, self.max_ = domain[0], domain[1]
@@ -69,7 +53,8 @@ class GP:
         self.batch_size = batch_size
         self.approximate = approximate
 
-        vectors = [torch.linspace(self.min_, self.max_, self.resolution) for _ in range(dims)]
+        #Doesn't work
+        """vectors = [torch.linspace(self.min_, self.max_, self.resolution) for _ in range(dims)]
 
         # Create a meshgrid of indicesq
         idxs = np.meshgrid(*[torch.arange(len(vec)) for vec in vectors], indexing='ij')
@@ -77,7 +62,7 @@ class GP:
         # Stack the indices and use them to index the original vectors
         points = torch.column_stack([vec[idx.flatten()] for vec, idx in zip(vectors, idxs)])
         # Reshape the result to the desired shape
-        self.points = points.repeat_interleave(batch_size, 0).reshape(batch_size, -1, dims).to(self.device)
+        self.points = points.repeat_interleave(batch_size, 0).reshape(batch_size, -1, dims).to(self.device)"""
 
         test_x = torch.linspace(self.min_, self.max_, self.resolution)
         test_y = torch.linspace(self.min_, self.max_, self.resolution)
@@ -92,8 +77,8 @@ class GP:
         if self.approximate:
             model = ApproximateGPModel(x, x.shape[0], kernel, self.dims, self.device).to(self.device)
         else:
-            #model = ExactGPModel(x, y, likelihood, x.shape[0], kernel, self.dims).to(self.device)
-            model = gpytorch.models.ExactGP(x, y, kernel).to(self.device)
+            model = ExactGPModel(x, y, likelihood, x.shape[0], kernel, self.dims).to(self.device)
+            #model = gpytorch.models.ExactGP(x, y, kernel).to(self.device)
             
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)  # Includes GaussianLikelihood parameters
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
@@ -128,6 +113,9 @@ class GP:
         model = best[1]
         likelihood = best[2]
 
+        self.x = x
+        self.y = y
+
         return self._predict_matrix(model, likelihood, idx)
 
     def _predict_matrix(self, model: ApproximateGPModel, likelihood: gpytorch.likelihoods.GaussianLikelihood, idx):        
@@ -144,7 +132,7 @@ class GP:
         #TODO: Scale back?
         self.mean = observed_pred.mean
         self.std = observed_pred.stddev
-        _, self.upper_confidence = observed_pred.confidence_region()
+        self.lower_confidence, self.upper_confidence = observed_pred.confidence_region()
 
         return self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))), self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
     
@@ -161,11 +149,34 @@ class GP:
                     best_ei = ei
         return best_point
     
+    def render(self, show = False):
+        plt.close()
+        plt.cla()
+        assert self.dims == 2, f"Only support 2 dims atm, found: {self.dims}"
+        fig, axs = plt.subplots(1, 2)
+        axs[0].scatter((self.x[0, :, 0].cpu())*self.resolution, (self.x[0, :, 1].cpu())*self.resolution, c = "red")
+        axs[1].scatter((self.x[0, :, 0].cpu())*self.resolution, (self.x[0, :, 1].cpu())*self.resolution, c = "red")
+        img = axs[0].imshow(self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))).cpu()[0].T)
+        plt.colorbar(img, ax = axs[0])
+        img = axs[1].imshow(self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))).cpu()[0].T)
+        plt.colorbar(img, ax = axs[1])
+        axs[0].set_title("Mean")
+        axs[1].set_title("Std")
+        if show:
+            plt.show()
+            data = None
+        else:
+            fig.canvas.draw()
+            arr = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+            data = arr.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        plt.close()
+        plt.cla()
+        return data
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     batch = 2
-    gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1, training_iters=200, approximate=True)
+    gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1, training_iters=200, approximate=False)
     x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     y = torch.tensor([0, 3.4, 1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
     #y = torch.rand(3).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))

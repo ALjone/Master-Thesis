@@ -11,8 +11,8 @@ best_length = None
 best_reward = None
 best_params = None
 
-lrs = [0.1, 0.01]
-training_iters = [100, 50, 25]
+lrs = [0.1]
+training_iters = [200]
 use_alls = [True, False]
 lr_dict = {lr: [] for lr in lrs}
 iter_dict = {iters: [] for iters in training_iters}

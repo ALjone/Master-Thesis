@@ -147,15 +147,15 @@ class GP:
         np.save("values_found", self.values_found)
         
 
-    def render(self):
+    def render(self, show = False):
         assert self.original_dims.shape[0] < 4
         if self.original_dims.shape[0] == 3:
             return self._render_3d()
         if self.original_dims.shape[0] == 2:
             images = {}
             name_string = f"{self.names[0]} vs {self.names[1]} - Mean"
-            images[name_string] = self._render_2d(self.original_dims[0], self.original_dims[1], self.mean, self.names[0], self.names[1], 0, 1)
-            return images
+            images[name_string] = self._render_2d(self.original_dims[0], self.original_dims[1], self.mean, self.std, show = show)
+            return images[name_string]
 
     def _render_3d(self):
         images = {}
@@ -165,26 +165,23 @@ class GP:
             images[name_string] = self._render_2d(self.original_dims[ax_1], self.original_dims[ax_2], np.mean(self.mean, axis=ax), self.names[ax_1], self.names[ax_2], ax_1, ax_2)
         return images
 
-    def _render_2d(self, x, y, points, x_name, y_name, ax_1, ax_2):
+    def _render_2d(self, x, y, mean, std, show = False):
         plt.close()
         plt.cla()
-        fig, axs = plt.subplots()
-        img = axs.contourf(x, y, points, 1000)
-        axs.scatter((self.checked_points[:, ax_1]), (self.checked_points[:, ax_2]), c = "red")
-        #axs.scatter((self.initial_points[:, ax_1]), (self.initial_points[:, ax_2]), c = "red")
-        #axs.scatter(self.biggest_coords[ax_1], self.biggest_coords[ax_2], c = "black")
-        axs.set_xlabel(x_name)
-        axs.set_ylabel(y_name)
-        axs.set_title(f"{x_name} vs {y_name} - Mean")
-        plt.colorbar(img, ax = axs)
-        plt.show()
-        plt.close()
-        plt.cla()
-        return
+        fig, axs = plt.subplots(1, 2)
+        img = axs[0].imshow(mean.reshape(tuple(self.resolution for _ in range(len(self.bounds)))).T)
+        axs[0].scatter((self.checked_points[:, 0]*self.resolution), (self.checked_points[:, 1]*self.resolution), c = "red")
+        axs[0].set_title("Mean")
+        plt.colorbar(img, ax = axs[0])
+        img = axs[1].imshow(std.reshape(tuple(self.resolution for _ in range(len(self.bounds)))).T)
+        axs[1].scatter((self.checked_points[:, 0]*self.resolution), (self.checked_points[:, 1]*self.resolution), c = "red")
+        axs[1].set_title("Std")
+        plt.colorbar(img, ax = axs[1])
         fig.canvas.draw()
         arr = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
         data = arr.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-        plt.show()
+        if show:
+            plt.show()
         plt.close('all')
         plt.cla()
         return data

@@ -54,7 +54,7 @@ class RandomFunction:
         f = (params["a"][idx] * ((x[:, idx] - params["p"][idx])**2) * torch.exp(-params["b"][idx] * (x[:, idx] - params["p"][idx])))
         return (f + -1*torch.amin(f, dim  = 0))
 
-    def get_noise(self, idx):
+    def _get_noise(self, idx):
         noise = np.random.normal(loc=1, scale=self.noise_scale, size=(tuple(self.resolution for _ in range(self.dims)) + (idx.shape[0], )))
         noise = gaussian_filter(noise, sigma=self.noise_correlation) # adjust sigma to control the amount of correlation
 
@@ -75,7 +75,7 @@ class RandomFunction:
             matrix = torch.einsum('ib,jb->ijb', f_1, f_2)
         else:
             matrix = torch.einsum('i,j->ij', f_1.squeeze(), f_2.squeeze())
-        noise = self.get_noise(idx).to(torch.float).squeeze()
+        noise = self._get_noise(idx).to(torch.float).squeeze()
 
         matrix = matrix * noise
         matrix += -1*(torch.amin(matrix, dim = (0, 1)))
@@ -103,7 +103,7 @@ class RandomFunction:
             matrix = torch.einsum('ib,jb,kb->ijkb', f_1, f_2, f_3)
         else:
             matrix = torch.einsum('i,j,k->ijk', f_1.squeeze(), f_2.squeeze(), f_3.squeeze())
-        noise = self.get_noise(idx).to(torch.float).squeeze()
+        noise = self._get_noise(idx).to(torch.float).squeeze()
 
         matrix = matrix * noise
         matrix = matrix/torch.amax(matrix, dim = (0, 1, 2))
