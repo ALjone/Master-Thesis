@@ -5,8 +5,8 @@ from sklearn.gaussian_process.kernels import RBF
 import torch
 from scipy.stats import norm
 from tqdm import tqdm
-def make_action(action):
-    return torch.stack((torch.tensor(action), torch.tensor([0.12, 0.31])), dim = 0).to(torch.device("cuda"))
+def make_action(action, dims):
+    return torch.stack((torch.tensor(action), torch.tensor([0.12 for _ in range(dims)])), dim = 0).to(torch.device("cuda"))
 
 
 
@@ -29,7 +29,7 @@ def run(max_length, dims):
     done = False
     while not done:
         act = sklearn.get_next_point()
-        next = (make_action(act)-(env.resolution//2))/(env.resolution//2)
+        next = (make_action(act, dims)-(env.resolution//2))/(env.resolution//2)
         #print("x:", next[0][0].item(), "y:", next[0][1].item())
         _, _, done, info = env.step(next, transform=False)
         done = done[0]

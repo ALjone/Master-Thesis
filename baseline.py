@@ -15,18 +15,19 @@ def baseline(run, n, max_length = None, dims = 2):
         rewards.append(r.cpu().numpy())
         lengths.append(l.cpu().numpy())
         peaks.append(p.cpu().numpy())
-    reward_avg = round((sum(rewards)/n).item(), 4)
-    reward_std = round(np.std(rewards).item(), 4)
-    length_avg = round((sum(lengths)/n).item(), 4)
-    length_std = round(np.std(lengths).item(), 4)
-    peak_avg = round((sum(peaks)/n).item(), 4)
-    peak_std = round(np.std(peaks).item(), 4)
+        
+    reward_avg = round((sum(rewards)/n), 4)
+    reward_std = round(np.std(rewards), 4)
+    length_avg = round((sum(lengths)/n), 4)
+    length_std = round(np.std(lengths), 4)
+    peak_avg = round((sum(peaks)/n), 4)
+    peak_std = round(np.std(peaks), 4)
 
     print(f"Reward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}")
 
 
 n = 2
-dims = 2
+dims = 3
 print("\n\n")
 
 #WITH TIME:

@@ -193,7 +193,7 @@ class BlackBox():
 
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
-        #TODO: This self.max is to normalize it, highly experimental, and should be far more modular
+
         mean, interval = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
 
         self.grid[idx, 0] = mean

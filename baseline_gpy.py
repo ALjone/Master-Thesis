@@ -4,8 +4,8 @@ from gpytorch.kernels import RBFKernel, MaternKernel, CosineKernel, PolynomialKe
 import torch
 from scipy.stats import norm
 from tqdm import tqdm
-def make_action(action):
-    return torch.stack((torch.tensor(action), torch.tensor([0.12, 0.31])), dim = 0).to(torch.device("cuda"))
+def make_action(action, dims):
+    return torch.stack((torch.tensor(action), torch.tensor([0.12 for _ in range(dims)])), dim = 0).to(torch.device("cuda"))
 
 
 
@@ -28,7 +28,7 @@ def run(max_length, dims, learning_rate = 0.01, training_iters = 100):
     done = False
     while not done:
         act = env.GP.get_next_point(EI, torch.max(torch.stack(env.values_for_gp[0])).cpu().numpy())
-        next = (make_action(act)-(resolution//2))/(resolution//2)
+        next = (make_action(act, dims)-(resolution//2))/(resolution//2) #TODO: Why?
         _, _, done, info = env.step(next, transform=False)
         done = done[0]
 
