@@ -111,7 +111,7 @@ class Agent(nn.Module):
         return value
 
     def get_action_and_value(self, img, time, action=None):
-        
+        #TODO!!! We take in action, but find logprob of x_t?
         action_mean, action_std, critic_output = self(img, time)
 
         normal = Normal(action_mean, action_std)
