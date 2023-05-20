@@ -110,20 +110,20 @@ class Agent(nn.Module):
         _, _, value = self(x, time)
         return value
 
-    def get_action_and_value(self, img, time, action=None):
+    def get_action_and_value(self, img, time, x_t=None):
         #TODO!!! We take in action, but find logprob of x_t?
         action_mean, action_std, critic_output = self(img, time)
 
         normal = Normal(action_mean, action_std)
-        x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
+        if x_t is None:
+            x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
         
-        if action is None:
-            action = torch.tanh(x_t)
+        action = torch.tanh(x_t)
         log_prob = normal.log_prob(x_t)
         log_prob -= torch.log(1.0 - action.pow(2) + 1e-8)
         log_prob = log_prob.sum(1)
 
-        return action, log_prob, normal.entropy().sum(1), critic_output, action_std
+        return x_t, log_prob, normal.entropy().sum(1), critic_output, action_std
     
 
     def count_parameters(self):

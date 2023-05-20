@@ -142,7 +142,7 @@ if __name__ == "__main__":
             stds[step] = torch.mean(std, dim = 1) #Save the std just for reporting
 
             # TRY NOT TO MODIFY: execute the game and log data.
-            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action, False if isinstance(agent, tanh_Agent) else True)
+            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action, True) #, False if isinstance(agent, tanh_Agent) else True)
             rewards[step] = reward.view(-1)
 
             if torch.sum(next_done) > 0:
