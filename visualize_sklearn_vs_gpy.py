@@ -17,10 +17,18 @@ def create_gif(frames, filename, duration=0.1):
     # Save the frames as a GIF using imageio
     imageio.mimsave(filename, frames, duration=duration)
 
-# Example usage:
-# Assuming you have a list called 'frames' containing the arrays
-# and you want to save the GIF as 'animation.gif'
+def pad_sublists(list_of_lists, expand_size):
+    idx = (0, 1)
+    padded_lists = []
+    for i in idx:
+        sublist = list_of_lists[i]
+        sublist_len = len(sublist)
+        num_copies = expand_size // sublist_len
+        padding_len = expand_size % sublist_len
+        padded_sublist = sublist * num_copies + sublist[:padding_len]
+        padded_lists.append(torch.stack(padded_sublist))
 
+    return torch.stack(padded_lists)
 
 
 def EI(u, std, biggest, e = 0.01):
@@ -66,7 +74,14 @@ def run():
                         y.to(torch.float32).unsqueeze(0).repeat_interleave(2, 0).to(torch.device("cuda")), torch.arange(start = 0, end = 2).to(torch.device("cuda")))
 
     sklearn_imgs = []
+    sklearn_gp.get_next_point()
+    sklearn_imgs.append(sklearn_gp.render())
+    plt.imshow(sklearn_imgs[-1])
+    plt.show()
     gpy_imgs = []
+    gpy_imgs.append(gpy_gp.render())
+    plt.imshow(gpy_imgs[-1])
+    plt.show()
     i = 2
     for _ in tqdm(range(20)):
         x, y = get_next_x_y(sklearn_gp, gpy_gp, x, y, matrix, i)

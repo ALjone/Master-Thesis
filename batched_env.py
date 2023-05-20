@@ -11,7 +11,7 @@ from scipy.stats import norm
 from utils import rand
 
 class BlackBox():
-    def __init__(self, resolution = 40, domain = [-1, 1], batch_size = 128, num_init_points = 2, T = 60, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False):
+    def __init__(self, resolution = 40, domain = [-1, 1], batch_size = 128, num_init_points = 4, T = 120, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False, expand_size = 15):
         #TODO: Make it take in a device...
         #TODO: Add printing info
         assert batch_size > 1, "Currently only batch size bigger than 1 supported. "
@@ -58,8 +58,9 @@ class BlackBox():
         self.max_time = self._t(torch.full_like(torch.zeros((batch_size, dims)), self.x_max).to(torch.device("cuda")), idx = torch.arange(start=0, end=batch_size)).to(torch.device("cuda"))
         assert self.max_time.shape[0] == batch_size
 
-        self.actions_for_gp = torch.zeros((batch_size, 50, dims)).to(torch.device("cuda"))
-        self.values_for_gp = torch.zeros((batch_size, 50)).to(torch.device("cuda"))
+        self.actions_for_gp = [[]]*self.batch_size
+        self.values_for_gp = [[]]*self.batch_size
+        self.expand_size = expand_size #NOTE: This just says how much we expand the two above to
         self.batch_step = torch.zeros((batch_size)).to(torch.long).to(torch.device("cuda")) #The tracker for what step each "env" is at 
         self.best_prediction = torch.zeros((batch_size)).to(torch.device("cuda")) #Assumes all predictions are positive
         self.previous_closeness_to_max = torch.zeros((batch_size)).to(torch.device("cuda"))
@@ -97,6 +98,7 @@ class BlackBox():
 
     def _check_init_points(self, idx):
         if idx.shape[0] == 0:
+            print("????", idx)
             return
         #raise NotImplementedError("Needs to circumvent step, to only check init points for idx")
         for i in range(self.num_init_points):
@@ -113,16 +115,9 @@ class BlackBox():
 
             action_value = self.func_grid[(idx, ) + tuple(ind[:, i] for i in range(ind.shape[-1]))].squeeze()
 
-            if i == 0: #First time we just fill the entire thing, to satisfy same-size stuff in GPY
-
-                self.actions_for_gp[idx] = act.unsqueeze(1).expand(-1, 50, -1)
-                if idx.shape[0] == 1:
-                    self.values_for_gp[idx] = action_value.expand(50)
-                else:
-                    self.values_for_gp[idx] = action_value.unsqueeze(1).expand(-1, 50)
-            else:
-                self.actions_for_gp[idx, i] = act
-                self.values_for_gp[idx, i] = action_value
+            for num, i in enumerate(idx):
+                self.actions_for_gp[i].append(act[num])
+                self.values_for_gp[i].append(action_value[num] if len(idx) > 1 else action_value)
 
             self.grid[(idx, 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(idx, 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
 
@@ -168,12 +163,29 @@ class BlackBox():
 
         self.batch_step[idx] = 0
 
+        for i in idx:
+            self.actions_for_gp[i] = []
+            self.values_for_gp[i] = []
+
         self._check_init_points(idx)
         self._update_grid_with_GP(idx)
 
         self.episodic_returns[idx] = 0
         
         return self._get_state()
+
+
+    def pad_sublists(self, list_of_lists, idx):
+        padded_lists = []
+        for i in idx:
+            sublist = list_of_lists[i]
+            sublist_len = len(sublist)
+            num_copies = self.expand_size // sublist_len
+            padding_len = self.expand_size % sublist_len
+            padded_sublist = sublist * num_copies + sublist[:padding_len]
+            padded_lists.append(torch.stack(padded_sublist))
+
+        return torch.stack(padded_lists)
 
     def _update_grid_with_GP(self, idx = None):
         if not self.use_GP:
@@ -182,7 +194,7 @@ class BlackBox():
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
         #TODO: This self.max is to normalize it, highly experimental, and should be far more modular
-        mean, interval = self.GP.get_mean_std(self.actions_for_gp[idx], self.values_for_gp[idx], idx)
+        mean, interval = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
 
         self.grid[idx, 0] = mean
         self.grid[idx, 1] = interval
@@ -237,8 +249,9 @@ class BlackBox():
 
         #TODO: Look for bugs like the one that was here (with need arange)
         #Gather?
-        self.actions_for_gp[torch.arange(self.batch_size), self.batch_step] = act #TODO: Should this be act, or action? I'm guessing act
-        self.values_for_gp[torch.arange(self.batch_size), self.batch_step] = action_value
+        for i in range(self.batch_size):
+            self.actions_for_gp[i].append(act[i])
+            self.values_for_gp[i].append(action_value[i])
 
         #Update all the different squares that the action affected
         self._update_grid_with_GP()
@@ -291,12 +304,12 @@ class BlackBox():
             max_coords = torch.argmax(self.func_grid[batch_idx]).item()
             y_max, x_max = divmod(max_coords, self.resolution)
 
-            for elem in self.actions_for_gp[batch_idx, self.num_init_points:]:
+            for elem in self.actions_for_gp[batch_idx][self.num_init_points:]:
                 a = self._find_indices(elem.unsqueeze(0)).squeeze()
                 y, x = a[0], a[1]
                 axs[0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7)
 
-            for elem in self.actions_for_gp[batch_idx, :self.num_init_points]:
+            for elem in self.actions_for_gp[batch_idx][:self.num_init_points]:
                 a = self._find_indices(elem.unsqueeze(0)).squeeze()
                 y, x = a[0], a[1]
                 axs[0].scatter(x.cpu(), y.cpu(), c = "red", linewidths=7)

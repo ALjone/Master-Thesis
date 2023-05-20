@@ -16,22 +16,18 @@ def EI(u, std, biggest, e = 0.01):
     Z = (u-biggest-e)/std
     return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
 
-def run(T, env: BlackBox, max_length = None, learning_rate = 0.01, training_iters = 100, use_all = False):
+def run(max_length = None, learning_rate = 0.01, training_iters = 100):
     """use_all: Whether to use all training points (the full 50, which includes duplicates) or just without duplicates"""
+    env = BlackBox(batch_size=2, dims = 2, kernels=[RBFKernel, MaternKernel])
     resolution = env.resolution
     env.GP.learning_rate = learning_rate
     env.GP.training_iters = training_iters
-    env.T = T
     env.reset()
 
     #TODO: Seems to still be a bug related to scaling
     done = False
     while not done:
-        if not use_all: #Force it to update
-            idx = torch.tensor((0, 1))
-            batch_step = 2 if env.batch_step[0] == 1 else env.batch_step[0] #Hacky
-            env.GP.get_mean_std(env.actions_for_gp[:, :batch_step+1], env.values_for_gp[:, :batch_step+1], idx)
-        act = env.GP.get_next_point(EI, torch.max(env.values_for_gp[0]).cpu().numpy())
+        act = env.GP.get_next_point(EI, torch.max(torch.stack(env.values_for_gp[0])).cpu().numpy())
         next = (make_action(act)-(resolution//2))/(resolution//2)
         _, _, done, info = env.step(next, transform=False)
         done = done[0]
@@ -46,13 +42,13 @@ def run(T, env: BlackBox, max_length = None, learning_rate = 0.01, training_iter
     return r, length, peak
 
 
-def baseline_gpy(T, n, env, max_length = None, learning_rate = 0.1, training_iters = 50, use_all = False):
+def baseline_gpy(n, max_length = None, learning_rate = 0.1, training_iters = 50):
     #TODO: Add std
     reward = 0
     length = 0
     peak = 0
     for _ in tqdm(range(n), disable=False, desc="Baselining gpy", leave = False):
-        r, l, p = run(T, env, max_length = max_length, learning_rate=learning_rate, training_iters=training_iters, use_all=use_all)
+        r, l, p = run(max_length = max_length, learning_rate=learning_rate, training_iters=training_iters)
         reward += r
         length += l
         peak += p

@@ -1,23 +1,18 @@
-import numpy as np
-# Define the three original vectors
-vector1 = np.arange(0, 40)
-vector2 = np.arange(0, 40)
-vector3 = np.arange(0, 40)
+import torch
 
-# Create a meshgrid of indices
-idx1, idx2, idx3 = np.meshgrid(np.arange(len(vector1)),
-                               np.arange(len(vector2)),
-                               np.arange(len(vector3)),
-                               indexing='ij')
+def pad_sublists(list_of_lists, target_length):
+    padded_lists = []
+    for sublist in list_of_lists:
+        sublist_len = len(sublist)
+        num_copies = target_length // sublist_len
+        padding_len = target_length % sublist_len
+        padded_sublist = sublist * num_copies + sublist[:padding_len]
+        padded_lists.append(padded_sublist)
+    return torch.tensor(padded_lists)
 
-# Stack the indices and use them to index the original vectors
-result = np.column_stack((vector1[idx1.flatten()],
-                          vector2[idx2.flatten()],
-                          vector3[idx3.flatten()]))
+# Example usage
+original_list = [[(1.0, 2.0), (3.0, 4.0)], [(5.0, 6.0)], [(7.0, 8.0), (9.0, 10.0), (11.0, 12.0)]]
+target_length = 50
 
-# Reshape the result to the desired shape
-result = result.reshape(-1, 3)
-
-# Print the result
-print(result)
-print(result.shape)
+tensor = pad_sublists(original_list, target_length)
+print(tensor.shape)

@@ -4,10 +4,8 @@ from sklearn.gaussian_process.kernels import RBF
 from tqdm import tqdm
 import torch
 
-def run(T, max_length = None):
-    resolution = 30
-    domain = (-1, 1)
-    env = BlackBox(resolution, domain = domain, batch_size=2, num_init_points=2, dims = 2, use_GP = False, T = T)
+def run(max_length = None):
+    env = BlackBox(batch_size=2, dims = 2, use_GP = False)
     env.reset()
     
 
@@ -28,12 +26,12 @@ def run(T, max_length = None):
     return r, length, peak
 
 
-def baseline_random(T, n, max_length = None):
+def baseline_random(n, max_length = None):
     reward = 0
     length = 0
     peak = 0
     for _ in tqdm(range(n), disable=False, desc="Baselining random", leave=False):
-        r, l, p = run(T, max_length = max_length)
+        r, l, p = run(max_length = max_length)
         reward += r
         length += l
         peak += p
