@@ -57,6 +57,7 @@ def get_next_x_y(sklearn_gp: sklearn_GP, gpy_gp: gpy_GP, x: torch.tensor, y: tor
     
 
 def run():
+    print("Warning, this doesn't function the same as batched env. Rewrite to work like batched env by making it use the list of list stuff")
     matrix = RandomFunction((0, 1), 30, 2, dims = 2).matrix.cpu()
 
     _x = np.array([[0.5, 0.7], [0.3, 0.3]])

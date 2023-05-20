@@ -16,9 +16,9 @@ def EI(u, std, biggest, e = 0.01):
     Z = (u-biggest-e)/std
     return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
 
-def run(max_length = None, learning_rate = 0.01, training_iters = 100):
+def run(max_length, dims, learning_rate = 0.01, training_iters = 100):
     """use_all: Whether to use all training points (the full 50, which includes duplicates) or just without duplicates"""
-    env = BlackBox(batch_size=2, dims = 2, kernels=[RBFKernel, MaternKernel])
+    env = BlackBox(batch_size=2, dims = dims, kernels=[RBFKernel, MaternKernel])
     resolution = env.resolution
     env.GP.learning_rate = learning_rate
     env.GP.training_iters = training_iters
@@ -40,19 +40,3 @@ def run(max_length = None, learning_rate = 0.01, training_iters = 100):
     peak = info["peak"][0]
 
     return r, length, peak
-
-
-def baseline_gpy(n, max_length = None, learning_rate = 0.1, training_iters = 50):
-    #TODO: Add std
-    reward = 0
-    length = 0
-    peak = 0
-    for _ in tqdm(range(n), disable=False, desc="Baselining gpy", leave = False):
-        r, l, p = run(max_length = max_length, learning_rate=learning_rate, training_iters=training_iters)
-        reward += r
-        length += l
-        peak += p
-
-    print("\tReward:", round((reward/n).item(), 4), "Length:", round((length/n).item()-2, 4), "Peak:", round((peak/n).item(), 4))
-
-    return (reward/n).item(), (length/n).item(), (peak/n).item()

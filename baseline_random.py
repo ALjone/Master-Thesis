@@ -4,8 +4,8 @@ from sklearn.gaussian_process.kernels import RBF
 from tqdm import tqdm
 import torch
 
-def run(max_length = None):
-    env = BlackBox(batch_size=2, dims = 2, use_GP = False)
+def run(max_length, dims):
+    env = BlackBox(batch_size=2, dims = dims, use_GP = False)
     env.reset()
     
 
@@ -24,18 +24,3 @@ def run(max_length = None):
     peak = info["peak"][0]
 
     return r, length, peak
-
-
-def baseline_random(n, max_length = None):
-    reward = 0
-    length = 0
-    peak = 0
-    for _ in tqdm(range(n), disable=False, desc="Baselining random", leave=False):
-        r, l, p = run(max_length = max_length)
-        reward += r
-        length += l
-        peak += p
-
-    print("\tReward:", round((reward/n).item(), 4), "Length:", round((length/n).item()-2, 4), "Peak:", round((peak/n).item(), 4))
-
-#find_average_for_start_points(env)
