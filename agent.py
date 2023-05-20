@@ -91,7 +91,7 @@ class Agent(nn.Module):
 
         if action is None:
             action = probs.sample()
-        return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), critic_output
+        return action, probs.log_prob(action).sum(1), probs.entropy().sum(1), critic_output, action_std
     
 
     def count_parameters(self):
