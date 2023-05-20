@@ -10,7 +10,7 @@ s, t = env.reset()
 for i in range(100):
     with torch.no_grad():
         action, lp, _, _, _ = agent.get_action_and_value(s, t)
-        print("Prob:", torch.exp(lp[0]).item())
+        print("Prob:", round(torch.exp(lp[0]).item(), 3), "Log prob:", round(lp[0].item(), 3))
         agent.visualize_dist(s, t)
-    (s, t), _, _, _ = env.step(action)
+    (s, t), _, _, _ = env.step(action, True)
     env.render()    

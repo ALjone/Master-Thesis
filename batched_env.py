@@ -267,7 +267,6 @@ class BlackBox():
 
         return self._get_state(), reward, dones, info
 
-
     def _display_axis(self, idx, axs, fig, data, title, invert = True):
         im = axs[idx].imshow(data)
         fig.colorbar(im, ax=axs[idx])
@@ -286,7 +285,7 @@ class BlackBox():
             self._display_axis(0, axs, fig, self.func_grid[batch_idx].reshape(self.resolution, self.resolution).cpu(), "Function")
             #TODO: Add
             #self._display_axis(1, axs, fig, self._t(self.vals[:, 0], self.vals[:, 1]).reshape(self.resolution, self.resolution), "Time")
-            self._display_axis(1, axs, fig, state[batch_idx, 1].cpu(), "95% interval for PPO", invert = True)
+            self._display_axis(1, axs, fig, state[batch_idx, 1].cpu(), "std for PPO", invert = True)
             self._display_axis(2, axs, fig, state[batch_idx, 0].cpu(), "Mean for PPO", invert = True)
 
             max_coords = torch.argmax(self.func_grid[batch_idx]).item()

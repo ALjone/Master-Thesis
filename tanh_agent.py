@@ -130,13 +130,14 @@ class Agent(nn.Module):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
     
     def visualize_dist(self, img, t):
+        plt.cla()
+        plt.close()
         action_mean, action_std, _ = self(img, t)
-        for mu, variance in zip(action_mean[0].squeeze().cpu().numpy(), action_std[0].squeeze().cpu().numpy()):
-            plt.cla()
-            plt.close()
+        fig, axs = plt.subplots(action_mean.shape[1], 1)
+        for mu, variance, ax in zip(action_mean[0].squeeze().cpu().numpy(), action_std[0].squeeze().cpu().numpy(), axs):
             sigma = variance
-            print("Variance:", sigma)
-            print("Mu:", mu)
-            x = np.linspace(mu - 3*sigma, mu + 3*sigma, 100)
-            plt.plot(x, np.tanh(stats.norm.pdf(x, mu, sigma)))
-            plt.show()
+            x = np.linspace(-2, 2, 100)
+            ax.plot(x, np.tanh(stats.norm.pdf(x, mu, sigma)))
+            ax.set_title(f"Variance: {round(sigma, 3)}, Mu: {round(mu, 2)}")
+            #plt.plot(x, np.tanh(stats.norm.pdf(x, mu, sigma)))
+        plt.show()
