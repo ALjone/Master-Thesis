@@ -6,6 +6,8 @@ Se mer på random functions, tune de bra
 
 Pix2Pix! (Men kvisleis?)
 
+Legge til en måte å sette noise i likelihood på.
+
 Skrive en visualiserings-ting, som viser både action, distanse fra forrige/alle, og critic
 
 Lage en baseline med EI, expected improvement, som viser hvor bra GP er

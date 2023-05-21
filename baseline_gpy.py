@@ -7,8 +7,6 @@ from tqdm import tqdm
 def make_action(action, dims):
     return torch.stack((torch.tensor(action), torch.tensor([0.12 for _ in range(dims)])), dim = 0).to(torch.device("cuda"))
 
-
-
 def EI(u, std, biggest, e = 0.01):
     if std <= 0:
         print("std under 0")
@@ -18,7 +16,7 @@ def EI(u, std, biggest, e = 0.01):
 
 def run(max_length, dims, learning_rate = 0.01, training_iters = 100):
     """use_all: Whether to use all training points (the full 50, which includes duplicates) or just without duplicates"""
-    env = BlackBox(batch_size=2, dims = dims, kernels=[RBFKernel, MaternKernel])
+    env = BlackBox(batch_size=2, dims = dims)
     resolution = env.resolution
     env.GP.learning_rate = learning_rate
     env.GP.training_iters = training_iters

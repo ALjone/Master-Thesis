@@ -57,7 +57,7 @@ class GP:
             test_xx = test_xx.reshape(-1, 1)
             test_yy = test_yy.reshape(-1, 1)
             self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
-        if dims == 3:
+        elif dims == 3:
             test_x = torch.linspace(self.min_, self.max_, self.resolution)
             test_y = torch.linspace(self.min_, self.max_, self.resolution)
             test_z = torch.linspace(self.min_, self.max_, self.resolution)
@@ -120,6 +120,7 @@ class GP:
 
         model.eval()
         likelihood.eval()
+        likelihood.noise = 0.001
 
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
             output = model(self.points[idx])
@@ -132,7 +133,7 @@ class GP:
 
         return self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))), self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
     
-    def old_get_next_point(self, acquisition, biggest):
+    def get_next_point(self, acquisition, biggest):
         best_point = None
         best_ei = -np.inf
         mean = self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))).cpu()
@@ -144,29 +145,7 @@ class GP:
                     best_point = (i,j)
                     best_ei = ei
         return best_point
-    
-    def get_next_point(self, acquisition, biggest):
-        best_point = None
-        best_ei = -np.inf
-        mean = self.mean.cpu()
-        std = self.std.cpu()
-        grid_shape = mean.shape[1:]
-        grid_size = np.prod(grid_shape)
-        
-        indices = np.indices(grid_shape)
-        indices = np.reshape(indices, (len(grid_shape), -1))
-        for idx in range(grid_size):
-            current_indices = tuple(indices[:, idx])
-            current_mean = mean[(0,) + current_indices]
-            current_std = std[(0,) + current_indices]
-            
-            ei = acquisition(current_mean, current_std, biggest)
-            if ei > best_ei:
-                best_point = current_indices
-                best_ei = ei
-                
-        return best_point
-    
+
     def render(self, show = False):
         plt.close()
         plt.cla()

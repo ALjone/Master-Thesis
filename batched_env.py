@@ -11,7 +11,7 @@ from scipy.stats import norm
 from utils import rand
 
 class BlackBox():
-    def __init__(self, resolution = 40, domain = [-1, 1], batch_size = 128, num_init_points = 4, T = 120, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False, expand_size = 15):
+    def __init__(self, resolution = 30, domain = [-1, 1], batch_size = 128, num_init_points = 4, T = 120, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False, expand_size = 50):
         #TODO: Make it take in a device...
         #TODO: Add printing info
         assert batch_size > 1, "Currently only batch size bigger than 1 supported. "

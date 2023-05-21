@@ -63,7 +63,7 @@ def parse_args():
         help="the maximum norm for the gradient clipping")
     parser.add_argument("--target-kl", type=float, default=0.3,
         help="the target KL divergence threshold")
-    parser.add_argument("--batch-size", type=float, default=4,
+    parser.add_argument("--batch-size", type=float, default=512,
         help="batch size")
     parser.add_argument("--resolution", type=int, default=30,
         help="resolution")
