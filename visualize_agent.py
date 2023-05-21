@@ -2,7 +2,7 @@ import torch
 from batched_env import BlackBox
 from tanh_agent import Agent as tanh_agent
 
-env = BlackBox(30, (0, 10), 2, num_init_points=2, dims = 2, T = 60)
+env = BlackBox(30, batch_size=2, dims = 2)
 agent: tanh_agent = torch.load("model.t")
 
 s, t = env.reset()

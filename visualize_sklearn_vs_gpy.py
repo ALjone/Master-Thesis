@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from Old.GP import GP as sklearn_GP
+from sklearn_GP import GP as sklearn_GP
 from sklearn.gaussian_process.kernels import RBF
 from GPY import GP as gpy_GP
 import numpy as np
@@ -9,6 +9,7 @@ from random_function import RandomFunction
 from scipy.stats import norm
 import imageio
 import numpy as np
+from acquisition_functions import EI
 
 def create_gif(frames, filename, duration=0.1):
     # Convert each frame (array) to uint8 format
@@ -30,13 +31,6 @@ def pad_sublists(list_of_lists, expand_size):
 
     return torch.stack(padded_lists)
 
-
-def EI(u, std, biggest, e = 0.01):
-    if std <= 0:
-        print("std under 0")
-        return 0
-    Z = (u-biggest-e)/std
-    return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
 
 def get_next_x_y(sklearn_gp: sklearn_GP, gpy_gp: gpy_GP, x: torch.tensor, y: torch.tensor, matrix: torch.tensor, i: int):
     

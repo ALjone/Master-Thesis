@@ -1,5 +1,5 @@
 from batched_env import BlackBox
-from Old.GP import GP as sklearnGP
+from sklearn_GP import GP as sklearnGP
 from sklearn.gaussian_process.kernels import RBF
 from tqdm import tqdm
 import torch
@@ -7,7 +7,6 @@ import torch
 def run(max_length, dims):
     env = BlackBox(batch_size=2, dims = dims, use_GP = False)
     env.reset()
-    
 
     #TODO: Seems to still be a bug related to scaling
     done = False

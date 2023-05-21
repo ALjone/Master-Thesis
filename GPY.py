@@ -35,11 +35,8 @@ class ApproximateGPModel(gpytorch.models.ApproximateGP):
         
 
 class GP:
-    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 200, dims = 3, approximate = False) -> None:
-
-        #TODO: REWRITE TO WORK FROM 0-1 OR SOMETHING
-
-        #TODO: REALLY NEED TO MAKE SURE THAT ACTUALLY JUST REPEATING ONE POINT WORKS
+    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 200, dims = 3, approximate = False, noise = None) -> None:
+        self.noise = noise
         self.training_iters = training_iters
         self.learning_rate = learning_rate
         self.kernels = kernels if kernels is not None else [RBFKernel]
@@ -71,13 +68,12 @@ class GP:
 
     def _get_model(self, kernel, x, y):
         likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]])).to(self.device)
-        #likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(torch.zeros(x.shape[1:]), batch_shape=torch.Size([x.shape[0]])).to(self.device)
+
         if self.approximate:
             model = ApproximateGPModel(x, x.shape[0], kernel, self.dims, self.device).to(self.device)
         else:
             model = ExactGPModel(x, y, likelihood, x.shape[0], kernel, self.dims).to(self.device)
-            #model = gpytorch.models.ExactGP(x, y, kernel).to(self.device)
-            
+
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)  # Includes GaussianLikelihood parameters
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
         model.train()
@@ -101,7 +97,7 @@ class GP:
         #NOTE: Assumes scaled input
         best = (np.inf, None, None)
         for kernel in self.kernels:
-            model, likelihood, loss = self._get_model(kernel, x, y)
+            model, likelihood, loss = self._get_model(kernel, x[idx], y[idx])
             if best[0] > loss:
                 best = (loss, model, likelihood)
             if self.verbose:
@@ -120,7 +116,8 @@ class GP:
 
         model.eval()
         likelihood.eval()
-        likelihood.noise = 0.001
+        if self.noise is not None:
+            likelihood.noise = self.noise
 
         with torch.no_grad(), gpytorch.settings.fast_pred_var():
             output = model(self.points[idx])
@@ -145,6 +142,27 @@ class GP:
                     best_point = (i,j)
                     best_ei = ei
         return best_point
+    
+
+    def get_next_point(self, biggest, e = 0.001):
+        from scipy.stats import norm
+        mean = self.mean.reshape((-1,) + tuple(self.resolution for _ in range(self.dims))).cpu()
+        std = self.std.reshape((-1,) + tuple(self.resolution for _ in range(self.dims))).cpu()
+
+        # Compute Z scores
+        Z = (mean - biggest - e) / std
+
+        # Compute expected improvement for all points in batch
+        improvement = (mean - biggest - e) * norm.cdf(Z) + std * norm.pdf(Z)
+
+        # Find the indices of the best points for each element in the batch
+        best_indices = []
+        print(improvement.shape, self.mean.shape, self.std.shape)
+        for i in range(self.batch_size):
+            best_index = np.unravel_index(np.argmax(improvement[i], axis=None), improvement[i].shape)
+            best_indices.append(best_index)
+
+        return torch.tensor(best_indices).to(torch.device("cuda")) 
 
     def render(self, show = False):
         plt.close()

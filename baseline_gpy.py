@@ -1,32 +1,32 @@
 from batched_env import BlackBox
-from GPY import GP as gpyGP
-from gpytorch.kernels import RBFKernel, MaternKernel, CosineKernel, PolynomialKernel, LinearKernel
+
 import torch
 from scipy.stats import norm
 from tqdm import tqdm
-def make_action(action, dims):
-    return torch.stack((torch.tensor(action), torch.tensor([0.12 for _ in range(dims)])), dim = 0).to(torch.device("cuda"))
+from acquisition_functions import EI
+from utils import make_action
 
-def EI(u, std, biggest, e = 0.01):
-    if std <= 0:
-        print("std under 0")
-        return 0
-    Z = (u-biggest-e)/std
-    return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
-
-def run(max_length, dims, learning_rate = 0.01, training_iters = 100):
+def run(max_length, dims, learning_rate = None, training_iters = None, approximate = None, noise = None):
     """use_all: Whether to use all training points (the full 50, which includes duplicates) or just without duplicates"""
-    env = BlackBox(batch_size=2, dims = dims)
+    #NOTE: Shady?
+    params = {"batch_size": 2, "dims": dims}
+    if learning_rate is not None:
+        params["GP_learning_rate"] = learning_rate
+    if training_iters is not None:
+        params["GP_training_iters"] = training_iters
+    if approximate is not None:
+        params["approximate"] = approximate
+    if noise is not None:
+        params["noise"] = noise
+
+    env = BlackBox(**params)
     resolution = env.resolution
-    env.GP.learning_rate = learning_rate
-    env.GP.training_iters = training_iters
     env.reset()
 
-    #TODO: Seems to still be a bug related to scaling
     done = False
     while not done:
-        act = env.GP.get_next_point(EI, torch.max(torch.stack(env.values_for_gp[0])).cpu().numpy())
-        next = (make_action(act, dims)-(resolution//2))/(resolution//2) #TODO: Why?
+        act = env.GP.get_next_point(torch.max(torch.stack(env.values_for_gp[0])).cpu().numpy())
+        next = (act-(resolution//2))/(resolution//2) #TODO: Why?
         _, _, done, info = env.step(next, transform=False)
         done = done[0]
 

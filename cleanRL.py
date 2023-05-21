@@ -94,7 +94,7 @@ if __name__ == "__main__":
     device = torch.device("cuda")
 
     # env setup
-    env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution, dims = args.dims)
+    env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution, dims = args.dims, print_ = True)
 
     agent = tanh_Agent(env.observation_space, args.dims).to(device)
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5, weight_decay=1e-4)
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     # ALGO Logic: Storage setup
     img_obs = torch.zeros((args.num_steps, ) + env.observation_space.shape).to(device)
     time_obs = torch.zeros((args.num_steps, args.batch_size)).to(device)
-    actions = torch.zeros((args.num_steps, ) + env.action_space.shape).to(device)
+    actions_before_tanh = torch.zeros((args.num_steps, ) + env.action_space.shape).to(device)
     logprobs = torch.zeros((args.num_steps, args.batch_size)).to(device)
     rewards = torch.zeros((args.num_steps, args.batch_size)).to(device)
     dones = torch.zeros((args.num_steps, args.batch_size)).to(device)
@@ -135,14 +135,14 @@ if __name__ == "__main__":
 
             # ALGO LOGIC: action logic
             with torch.no_grad():
-                action, logprob, _, value, std = agent.get_action_and_value(next_img_obs, next_time_obs)
+                action_before_tanh, logprob, _, value, std = agent.get_action_and_value(next_img_obs, next_time_obs)
                 values[step] = value.flatten()
-            actions[step] = action
+            actions_before_tanh[step] = action_before_tanh
             logprobs[step] = logprob
             stds[step] = torch.mean(std, dim = 1) #Save the std just for reporting
 
             # TRY NOT TO MODIFY: execute the game and log data.
-            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action, True) #, False if isinstance(agent, tanh_Agent) else True)
+            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action_before_tanh, True) #, False if isinstance(agent, tanh_Agent) else True)
             rewards[step] = reward.view(-1)
 
             if torch.sum(next_done) > 0:
@@ -173,7 +173,7 @@ if __name__ == "__main__":
         b_img_obs = img_obs.reshape((-1,) + env.observation_space.shape[1:])
         b_time_obs = time_obs.reshape(-1, )
         b_logprobs = logprobs.reshape(-1)
-        b_actions = actions.reshape((-1,) + env.action_space.shape[1:])
+        b_actions_before_tanh = actions_before_tanh.reshape((-1,) + env.action_space.shape[1:])
         b_advantages = advantages.reshape(-1)
         b_returns = returns.reshape(-1)
         b_values = values.reshape(-1)
@@ -188,7 +188,7 @@ if __name__ == "__main__":
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
 
-                _, newlogprob, entropy, newvalue, _ = agent.get_action_and_value(b_img_obs[mb_inds], b_time_obs[mb_inds], b_actions.long()[mb_inds])
+                _, newlogprob, entropy, newvalue, _ = agent.get_action_and_value(b_img_obs[mb_inds], b_time_obs[mb_inds], b_actions_before_tanh.long()[mb_inds])
                 logratio = newlogprob - b_logprobs[mb_inds]
                 ratio = logratio.exp()
 
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
-        writer.add_scalar("charts/average_action", torch.mean(actions).item(), global_step)
+        writer.add_scalar("charts/average_action", torch.mean(actions_before_tanh).item(), global_step)
         writer.add_scalar("charts/action_std", torch.std(stds).item(), global_step)
         writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
         writer.add_scalar("charts/max_observation", next_img_obs.max(), global_step)

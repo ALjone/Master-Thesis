@@ -23,11 +23,11 @@ def baseline(run, n, max_length = None, dims = 2):
     reward_std = round(np.std(rewards)/np.sqrt(n), 4)
     length_std = round(np.std(lengths)/np.sqrt(n), 4)
     peak_std = round(np.std(peaks)/np.sqrt(n), 4)
-
+    
     print(f"Reward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}")
 
 
-n = 1000
+n = 10
 dims = 2
 print("\n\n")
 
@@ -38,15 +38,4 @@ baseline(run_random, n, max_length, dims)
 print(f"\nBaseline gpy with n = {n}:")
 baseline(run_gpy, n, max_length, dims)
 print(f"\nBaseline sklearn with n = {n}:")
-baseline(run_sklearn, n, max_length, dims)
-
-exit()
-
-#WITH A SET AMOUNT OF ITERATIONS
-max_length = 20+1
-print(f"\nBaseline random with max_length: {max_length}, n = {n}:")
-baseline(run_random, n, max_length, dims)
-print(f"\nBaseline gpy with max_length: {max_length}, n = {n}:")
-baseline(run_gpy, n, max_length, dims)
-print(f"\nBaseline sklearn with max_length: {max_length}, n = {n}:")
 baseline(run_sklearn, n, max_length, dims)

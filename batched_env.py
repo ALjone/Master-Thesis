@@ -7,13 +7,28 @@ from GPY import GP
 import torch
 import numpy as np
 
-from scipy.stats import norm
 from utils import rand
 
 class BlackBox():
-    def __init__(self, resolution = 30, domain = [-1, 1], batch_size = 128, num_init_points = 4, T = 120, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False, expand_size = 50):
+    def __init__(self, resolution = 30, domain = [-1, 1], batch_size = 128, num_init_points = 4, T = 120, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False, expand_size = 50, noise = None, print_ = False):
         #TODO: Make it take in a device...
-        #TODO: Add printing info
+        if print_:
+            print("Initialized with the following parameters:")
+            print(f"  Resolution: {resolution} (number of grid cells in each dimension)")
+            print(f"  Domain: {domain} (range of values for each dimension)")
+            print(f"  Batch Size: {batch_size} (number of environments in each batch)")
+            print(f"  Number of Initial Points: {num_init_points} (number of initial random points per environment)")
+            print(f"  Total Time Steps: {T}")
+            print(f"  Kernels: {kernels} (kernel functions for Gaussian Process)")
+            print(f"  Dimensions: {dims} (number of dimensions in the function space)")
+            print(f"  Use Gaussian Process: {use_GP}")
+            print(f"  GP Learning Rate: {GP_learning_rate} (learning rate for Gaussian Process)")
+            print(f"  GP Training Iterations: {GP_training_iters} (number of training iterations for Gaussian Process)")
+            print(f"  Approximate: {approximate} (whether to use approximate Gaussian Process inference)")
+            print(f"  Expand Size: {expand_size} (expansion size for storing actions and values for Gaussian Process)")
+            print(f"  Noise: {noise} (noise level for Gaussian Process)")
+            print()
+
         assert batch_size > 1, "Currently only batch size bigger than 1 supported. "
         #Set important variables
         self.num_init_points = num_init_points
@@ -175,10 +190,9 @@ class BlackBox():
         return self._get_state()
 
 
-    def pad_sublists(self, list_of_lists, idx):
+    def pad_sublists(self, list_of_lists):
         padded_lists = []
-        for i in idx:
-            sublist = list_of_lists[i]
+        for sublist in list_of_lists:
             sublist_len = len(sublist)
             num_copies = self.expand_size // sublist_len
             padding_len = self.expand_size % sublist_len
@@ -194,7 +208,7 @@ class BlackBox():
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
 
-        mean, interval = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
+        mean, interval = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp), self.pad_sublists(self.values_for_gp), idx)
 
         self.grid[idx, 0] = mean
         self.grid[idx, 1] = interval

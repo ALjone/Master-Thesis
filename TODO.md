@@ -1,3 +1,9 @@
+Prio:
+    Skrive om baseline gpy til å bruke batching, så det går fortere. 
+    Gjøre skikkelig hyperparameter søk med GPY (Reso = 20?)
+    Logge std output
+    
+
 Skrive om reward sånn at den gir mening
 
 Normaliserer nå i random function, men heller gjøre det med sampled points.

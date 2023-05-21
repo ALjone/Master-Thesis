@@ -1,21 +1,10 @@
 from batched_env import BlackBox
-from Old.GP import GP as sklearnGP
-import numpy as np
+from sklearn_GP import GP as sklearnGP
 from sklearn.gaussian_process.kernels import RBF
 import torch
-from scipy.stats import norm
-from tqdm import tqdm
-def make_action(action, dims):
-    return torch.stack((torch.tensor(action), torch.tensor([0.12 for _ in range(dims)])), dim = 0).to(torch.device("cuda"))
+from acquisition_functions import EI
+from utils import make_action
 
-
-
-def EI(u, std, biggest, e = 0.01):
-    if std <= 0:
-        print("std under 0")
-        return 0
-    Z = (u-biggest-e)/std
-    return (u-biggest-e)*norm.cdf(Z)+std*norm.pdf(Z)
 
 def run(max_length, dims):
     env = BlackBox(batch_size=2, dims = dims, use_GP = False)

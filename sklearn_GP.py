@@ -87,9 +87,8 @@ class GP:
                     best_ei = ei
         return best_point
 
+
     def _predict_matrix(self):
-
-
         self.mean = np.zeros([self.resolution for _ in range(self.transformed_dims.shape[0])])
         self.std = np.zeros([self.resolution for _ in range(self.transformed_dims.shape[0])])
 
