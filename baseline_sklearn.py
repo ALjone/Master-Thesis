@@ -6,7 +6,7 @@ from acquisition_functions import EI
 from utils import make_action
 
 
-def run(max_length, dims):
+def run(dims):
     env = BlackBox(batch_size=2, dims = dims, use_GP = False)
     env.reset()
     checked_points = torch.stack(env.actions_for_gp[0]).cpu().numpy()
@@ -23,13 +23,6 @@ def run(max_length, dims):
         _, _, done, info = env.step(next, transform=False)
         done = done[0]
         sklearn.update_points(env.actions_for_gp[0][-1].cpu().numpy(), env.values_for_gp[0][-1].cpu().numpy())
-        #print("Adding points:", env.actions_for_gp[0, env.batch_step[0]-1].cpu().numpy())
-        #print("Checked points:")
-        #print(sklearn.checked_points)
-        #sklearn.render()
-        #print()
-        if max_length is not None and env.batch_step[0] > max_length:
-            break
 
     r = info["episodic_returns"][0]
     length = info["episodic_length"][0]

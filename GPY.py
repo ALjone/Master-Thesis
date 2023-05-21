@@ -110,6 +110,7 @@ class GP:
         self.x = x
         self.y = y
 
+
         return self._predict_matrix(model, likelihood, idx)
 
     def _predict_matrix(self, model: ApproximateGPModel, likelihood: gpytorch.likelihoods.GaussianLikelihood, idx):        
@@ -156,8 +157,9 @@ class GP:
         improvement = (mean - biggest - e) * norm.cdf(Z) + std * norm.pdf(Z)
 
         # Find the indices of the best points for each element in the batch
+        print(improvement.shape)
+        print(mean.shape)
         best_indices = []
-        print(improvement.shape, self.mean.shape, self.std.shape)
         for i in range(self.batch_size):
             best_index = np.unravel_index(np.argmax(improvement[i], axis=None), improvement[i].shape)
             best_indices.append(best_index)
