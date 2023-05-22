@@ -1,0 +1,23 @@
+Averages:
+
+Leaning rate:
+        Learning rate: 0.1   Average: 0.9577
+        Learning rate: 0.01   Average: 0.9479
+Training iterations:
+        Training iterations: 25   Average: 0.9447
+        Training iterations: 50   Average: 0.957
+        Training iterations: 100   Average: 0.9556
+        Training iterations: 200   Average: 0.9537
+Approx:
+        Approx: True   Average: 0.9606
+        Approx: False   Average: 0.945
+Noise:
+        Noise: None   Average: 0.9535
+        Noise: 0.1   Average: 0.9527
+        Noise: 1e-05   Average: 0.9521
+
+
+
+Best params:
+        Learning rate: 0.1     Iterations: 100     Approx: False
+        Reward: 0.1739       Peak: 0.9685     Length: 9.697

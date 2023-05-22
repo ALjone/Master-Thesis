@@ -35,11 +35,11 @@ class ApproximateGPModel(gpytorch.models.ApproximateGP):
         
 
 class GP:
-    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 200, dims = 3, approximate = False, noise = None) -> None:
+    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 50, dims = 3, approximate = False, noise = None) -> None:
         self.noise = noise
         self.training_iters = training_iters
         self.learning_rate = learning_rate
-        self.kernels = kernels if kernels is not None else [RBFKernel]
+        self.kernels = kernels if kernels is not None else [RBFKernel, MaternKernel]
         self.verbose = verbose
         self.resolution = resolution
         self.min_, self.max_ = domain[0], domain[1]
@@ -47,6 +47,9 @@ class GP:
         self.dims = dims
         self.batch_size = batch_size
         self.approximate = approximate
+        self.mean = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
+        self.std = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
+
         if dims == 2:
             test_x = torch.linspace(self.min_, self.max_, self.resolution)
             test_y = torch.linspace(self.min_, self.max_, self.resolution)
@@ -97,7 +100,7 @@ class GP:
         #NOTE: Assumes scaled input
         best = (np.inf, None, None)
         for kernel in self.kernels:
-            model, likelihood, loss = self._get_model(kernel, x[idx], y[idx])
+            model, likelihood, loss = self._get_model(kernel, x, y)
             if best[0] > loss:
                 best = (loss, model, likelihood)
             if self.verbose:
@@ -125,17 +128,17 @@ class GP:
             observed_pred = likelihood(output)
 
         #TODO: Scale back?
-        self.mean = observed_pred.mean
-        self.std = observed_pred.stddev
+        self.mean[idx] = observed_pred.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
+        self.std[idx] = observed_pred.stddev.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
         self.lower_confidence, self.upper_confidence = observed_pred.confidence_region()
 
-        return self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))), self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
+        return self.mean[idx], self.std[idx]
     
     def get_next_point(self, acquisition, biggest):
         best_point = None
         best_ei = -np.inf
-        mean = self.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))).cpu()
-        std = self.std.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims))).cpu()
+        mean = self.mean
+        std = self.std
         for i in range(mean.shape[1]):
             for j in range(mean.shape[2]):
                 ei = acquisition(mean[0, i,j], std[0, i,j], biggest)
@@ -147,8 +150,8 @@ class GP:
 
     def get_next_point(self, biggest, e = 0.001):
         from scipy.stats import norm
-        mean = self.mean.reshape((-1,) + tuple(self.resolution for _ in range(self.dims))).cpu()
-        std = self.std.reshape((-1,) + tuple(self.resolution for _ in range(self.dims))).cpu()
+        mean = self.mean.cpu()
+        std = self.std.cpu()
 
         # Compute Z scores
         Z = (mean - biggest - e) / std
@@ -157,8 +160,7 @@ class GP:
         improvement = (mean - biggest - e) * norm.cdf(Z) + std * norm.pdf(Z)
 
         # Find the indices of the best points for each element in the batch
-        print(improvement.shape)
-        print(mean.shape)
+
         best_indices = []
         for i in range(self.batch_size):
             best_index = np.unravel_index(np.argmax(improvement[i], axis=None), improvement[i].shape)

@@ -1,5 +1,5 @@
 from batched_env import BlackBox
-
+from tqdm import tqdm
 import torch
 
 def run(n, dims, learning_rate = None, training_iters = None, approximate = None, noise = None, batch_size = 512):
@@ -23,13 +23,16 @@ def run(n, dims, learning_rate = None, training_iters = None, approximate = None
     lengths = []
     peaks = []
 
-    while len(peaks) < n:
-        act = env.GP.get_next_point(torch.max(torch.stack(env.values_for_gp[0])).cpu().numpy())
-        next = (act-(resolution//2))/(resolution//2) #TODO: Why?
-        _, _, dones, info = env.step(next, transform=False)
-        if torch.sum(dones) > 0:
-            rewards += info["episodic_returns"][dones].tolist()
-            lengths += info["episodic_length"][dones].tolist()
-            peaks += info["peak"][dones].tolist()
+
+    with tqdm(total=n, desc = "Baselining GPY", leave = False) as pbar:
+        while len(peaks) < n:
+            act = env.GP.get_next_point(torch.max(torch.stack(env.values_for_gp[0])).cpu().numpy())
+            next = (act-(resolution//2))/(resolution//2) #TODO: Why?
+            _, _, dones, info = env.step(next, transform=False)
+            if torch.sum(dones) > 0:
+                rewards += info["episodic_returns"][dones].tolist()
+                lengths += info["episodic_length"][dones].tolist()
+                peaks += info["peak"][dones].tolist()
+                pbar.update(torch.sum(dones).item())
 
     return rewards, lengths, peaks

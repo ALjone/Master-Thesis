@@ -190,9 +190,11 @@ class BlackBox():
         return self._get_state()
 
 
-    def pad_sublists(self, list_of_lists):
+    def pad_sublists(self, list_of_lists, idx):
+        #Thanks to ChatGPT
         padded_lists = []
-        for sublist in list_of_lists:
+        for i in idx:
+            sublist = list_of_lists[i]
             sublist_len = len(sublist)
             num_copies = self.expand_size // sublist_len
             padding_len = self.expand_size % sublist_len
@@ -208,7 +210,7 @@ class BlackBox():
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
 
-        mean, interval = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp), self.pad_sublists(self.values_for_gp), idx)
+        mean, interval = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
 
         self.grid[idx, 0] = mean
         self.grid[idx, 1] = interval
