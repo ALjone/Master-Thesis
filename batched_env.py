@@ -211,10 +211,6 @@ class BlackBox():
         if idx is None: idx = self.idx
 
         mean, interval, EI, _ = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
-        plt.imshow(EI[0].cpu().numpy())
-        plt.show()
-        plt.imshow(EI[1].cpu().numpy())
-        plt.show()
         self.grid[idx, 0] = mean
         self.grid[idx, 1] = interval
         self.grid[idx, 2] = EI
