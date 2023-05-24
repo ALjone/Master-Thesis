@@ -1,18 +1,29 @@
 import torch
+import matplotlib.pyplot as plt
+import numpy as np
 
-def pad_sublists(list_of_lists, target_length):
-    padded_lists = []
-    for sublist in list_of_lists:
-        sublist_len = len(sublist)
-        num_copies = target_length // sublist_len
-        padding_len = target_length % sublist_len
-        padded_sublist = sublist * num_copies + sublist[:padding_len]
-        padded_lists.append(padded_sublist)
-    return torch.tensor(padded_lists)
+# Parameters for the 2D normal distribution
+mu = torch.zeros(2)
+cov = torch.eye(2)
 
-# Example usage
-original_list = [[(1.0, 2.0), (3.0, 4.0)], [(5.0, 6.0)], [(7.0, 8.0), (9.0, 10.0), (11.0, 12.0)]]
-target_length = 50
+# Create a Normal distribution with these parameters
+normal_dist = torch.distributions.MultivariateNormal(mu, cov)
 
-tensor = pad_sublists(original_list, target_length)
-print(tensor.shape)
+# Create a grid of points at which to evaluate the pdf
+x = np.linspace(-3, 3, 100)
+y = np.linspace(-3, 3, 100)
+X, Y = np.meshgrid(x, y)
+xy = np.column_stack([X.flat, Y.flat])
+
+# Evaluate the pdf at these points
+Z = normal_dist.log_prob(torch.tensor(np.tanh(xy))).exp()
+Z = Z.reshape(X.shape)
+
+# Plot the pdf
+plt.figure(figsize=(5,5))
+plt.contourf(X, Y, Z, levels=100, cmap='viridis')
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.colorbar()
+plt.title('2D Normal Distribution PDF')
+plt.show()

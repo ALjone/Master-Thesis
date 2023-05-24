@@ -132,7 +132,7 @@ class Agent(nn.Module):
     def visualize_dist(self, img, t):
         plt.cla()
         plt.close()
-        action_mean, action_std, _ = self(img, t)
+        action_mean, action_std, _ = self(img, t)       
         fig, axs = plt.subplots(action_mean.shape[1], 1)
         for mu, variance, ax in zip(action_mean[0].squeeze().cpu().numpy(), action_std[0].squeeze().cpu().numpy(), axs):
             sigma = variance
@@ -141,3 +141,23 @@ class Agent(nn.Module):
             ax.set_title(f"Variance: {round(sigma, 3)}, Mu: {round(mu, 2)}")
             #plt.plot(x, np.tanh(stats.norm.pdf(x, mu, sigma)))
         plt.show()
+
+    def get_2d_prob(self, img, t):
+        plt.cla()
+        plt.close()
+        action_mean, action_std, _ = self(img, t)       
+        mus = action_mean[0].squeeze()
+        stds = action_std[0].squeeze()
+        normal_1 = Normal(mus[0], stds[1])
+        normal_2 = Normal(mus[1], stds[1])
+        x = torch.linspace(-1, 1, 100).to(torch.device("cuda"))
+        log_prob_1 = normal_1.log_prob(x)
+        log_prob_2 = normal_2.log_prob(x)
+        #log_prob_1 -= torch.log(1.0 - x.pow(2) + 1e-8)
+        #log_prob_2 -= torch.log(1.0 - x.pow(2) + 1e-8)
+        prob_1 = log_prob_1.exp()
+        prob_2 = log_prob_2.exp()
+        prob = torch.einsum("o, t -> ot", prob_1, prob_2)
+        print(prob.shape)
+
+        return prob.cpu().numpy()

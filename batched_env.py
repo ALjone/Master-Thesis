@@ -44,7 +44,7 @@ class BlackBox():
 
         #Things for the env
         self.observation_space = spaces.Box(low=0, high=1, shape=
-                    ((batch_size, 5) + tuple(resolution for _ in range(dims))), dtype=np.float32)
+                    ((batch_size, 4) + tuple(resolution for _ in range(dims))), dtype=np.float32)
         self.action_space = spaces.Box(low = self.action_min, high = self.action_max, shape = (batch_size, dims), dtype=np.float32)
 
         self.reward_range = (0, 1) 
@@ -134,7 +134,7 @@ class BlackBox():
                 self.actions_for_gp[i].append(act[num])
                 self.values_for_gp[i].append(action_value[num] if len(idx) > 1 else action_value)
 
-            self.grid[(idx, 4) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(idx, 4) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
+            self.grid[(idx, -1) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(idx, -1) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
 
             #Update timestuff
             self.best_prediction[idx] = torch.maximum(self.best_prediction[idx], action_value)
@@ -210,19 +210,19 @@ class BlackBox():
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
 
-        mean, interval, EI, UCB = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
-
+        mean, interval, EI, _ = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
+        plt.imshow(EI[0].cpu().numpy())
+        plt.show()
+        plt.imshow(EI[1].cpu().numpy())
+        plt.show()
         self.grid[idx, 0] = mean
         self.grid[idx, 1] = interval
         self.grid[idx, 2] = EI
-        self.grid[idx, 3] = UCB
 
     def _get_state(self):
         #TODO: This uses illegal information in that it is providing the actual max of the time function
         new_grid = torch.clone(self.grid)
-        #new_grid[:, 0] = new_grid[:, 0]/self.best_prediction[:, None, None, None]
-        #new_grid[:, 1] = new_grid[:, 1]/self.best_prediction[:, None, None, None] #TODO: Is it correct to divide the std with the biggest prediction? Or should it be by biggest std? Ask Nello?
-        new_grid[:, 2] = new_grid[:, 4]/self.T
+        new_grid[:, -1] = new_grid[:, -1]/self.T
 
         return new_grid, self.time
 
@@ -241,7 +241,6 @@ class BlackBox():
         for a in action:
             output.append(self._transform_action(a, self.x_max, self.x_min))
         return torch.stack(output, dim = 1).to(torch.device("cuda"))
-        return self._transform_action(x, self.x_max, self.x_min), self._transform_action(y, self.x_max, self.x_min), self._transform_action(z, self.x_max, self.x_min)
 
     def step(self, action, transform = False) -> Tuple[torch.Tensor, float, bool]:
         """Completes the given action and returns the new map"""
@@ -274,7 +273,7 @@ class BlackBox():
         #Update all the different squares that the action affected
         self._update_grid_with_GP()
 
-        self.grid[(slice(None), 4) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(slice(None), 4) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
+        self.grid[(slice(None), -1) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(slice(None), -1) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
 
         #Update timestuff
         self.time = self.time + time
@@ -305,34 +304,38 @@ class BlackBox():
             axs[idx].invert_yaxis()
         axs[idx].set_title(title)
 
-    def render(self, mode='human', close=False, batch_idx = 0):
+    def render(self, mode='human', close=False, show = True, batch_idx = 0, tanh_mean = None):
         assert self.dims == 2, "Only supported for 2D"
         if mode == "human":
             if close:
                 plt.cla()
                 plt.close()
-            fig, axs = plt.subplots(1, 3, figsize=(20, 10))
+            fig, axs = plt.subplots(1, 4, figsize=(20, 10))
             state, _ = self._get_state()
             self._display_axis(0, axs, fig, self.func_grid[batch_idx].reshape(self.resolution, self.resolution).cpu(), "Function")
             #TODO: Add
-            #self._display_axis(1, axs, fig, self._t(self.vals[:, 0], self.vals[:, 1]).reshape(self.resolution, self.resolution), "Time")
-            self._display_axis(1, axs, fig, state[batch_idx, 1].cpu(), "std for PPO", invert = True)
-            self._display_axis(2, axs, fig, state[batch_idx, 0].cpu(), "Mean for PPO", invert = True)
+            self._display_axis(1, axs, fig, state[batch_idx, 0].cpu(), "Mean for PPO", invert = True)
+            self._display_axis(2, axs, fig, state[batch_idx, 1].cpu(), "std for PPO", invert = True)
+            self._display_axis(3, axs, fig, state[batch_idx, 2].cpu(), "EI for PPO", invert = True)
 
             max_coords = torch.argmax(self.func_grid[batch_idx]).item()
             y_max, x_max = divmod(max_coords, self.resolution)
 
-            for elem in self.actions_for_gp[batch_idx][self.num_init_points:]:
+            for i, elem in enumerate(self.actions_for_gp[batch_idx][self.num_init_points:]):
                 a = self._find_indices(elem.unsqueeze(0)).squeeze()
                 y, x = a[0], a[1]
-                axs[0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7)
+                axs[0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7, label = "Actions made")
 
-            for elem in self.actions_for_gp[batch_idx][:self.num_init_points]:
+            for i, elem in enumerate(self.actions_for_gp[batch_idx][:self.num_init_points]):
                 a = self._find_indices(elem.unsqueeze(0)).squeeze()
                 y, x = a[0], a[1]
-                axs[0].scatter(x.cpu(), y.cpu(), c = "red", linewidths=7)
+                axs[0].scatter(x.cpu(), y.cpu(), c = "red", linewidths=7, label = "Initial points" if i == 0 else None)
 
-
+            if tanh_mean is not None:
+                a = self._find_indices(tanh_mean).squeeze()
+                y, x = a[0], a[1]
+                for i, ax in enumerate(axs):
+                    ax.scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7, marker = 'x', label = "Agent mean" if i == 0 else None)
 
             #TODO: Fix this..
             #y, x = self.actions_for_gp[batch_idx, -1].cpu()
@@ -345,8 +348,11 @@ class BlackBox():
             self._get_closeness_to_max()
             fig.suptitle(f"Percent of max at best guess: {round(self._get_closeness_to_max()[0].item(), 3)}\nPercent of max at last guess: {round(self.previous_closeness_to_max[0].item(), 3)}")
 
-            plt.axis("off")
-            plt.show()
-
+            if show:
+                plt.axis("off")
+                #handles, labels = axs[0].get_legend_handles_labels()
+                fig.legend()
+                plt.show()
+            return fig, axs
         else:
             raise ValueError(f"Only mode 'human' supported, found: {mode}")
