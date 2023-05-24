@@ -13,6 +13,5 @@ for i in range(100):
         action, lp, _, _, _ = agent.get_action_and_value(s, t)
         #print("Prob:", round(torch.exp(lp[0]).item(), 3), "Log prob:", round(lp[0].item(), 3))
         action_mean, action_std, _ = agent(s, t)
-    (s, t), _, _, _ = env.step(action, True)
     fig, axs = env.render(tanh_mean = torch.tanh(action_mean[0]).unsqueeze(0))    
-    
+    (s, t), _, _, _ = env.step(action, True)
