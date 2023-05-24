@@ -10,7 +10,7 @@ import numpy as np
 from utils import rand
 
 class BlackBox():
-    def __init__(self, resolution = 30, domain = [-1, 1], batch_size = 128, num_init_points = 4, T = 120, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 100, approximate = False, expand_size = 50, noise = None, print_ = False):
+    def __init__(self, resolution = 30, domain = [-1, 1], batch_size = 128, num_init_points = 4, T = 120, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False, expand_size = 50, noise = None, print_ = False):
         #TODO: Make it take in a device...
         if print_:
             print("Initialized with the following parameters:")
@@ -320,7 +320,7 @@ class BlackBox():
             for i, elem in enumerate(self.actions_for_gp[batch_idx][self.num_init_points:]):
                 a = self._find_indices(elem.unsqueeze(0)).squeeze()
                 y, x = a[0], a[1]
-                axs[0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7, label = "Actions made")
+                axs[0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7, label = "Actions made" if i == 0 else None)
 
             for i, elem in enumerate(self.actions_for_gp[batch_idx][:self.num_init_points]):
                 a = self._find_indices(elem.unsqueeze(0)).squeeze()

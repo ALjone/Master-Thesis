@@ -16,7 +16,6 @@ def run(n, dims, learning_rate = None, training_iters = None, approximate = None
         params["noise"] = noise
 
     env = BlackBox(**params)
-    resolution = env.resolution
     env.reset()
 
     rewards = []
@@ -26,9 +25,8 @@ def run(n, dims, learning_rate = None, training_iters = None, approximate = None
 
     with tqdm(total=n, desc = "Baselining GPY", leave = False) as pbar:
         while len(peaks) < n:
-            act = env.GP.get_next_point(torch.max(torch.stack(env.values_for_gp[0])).cpu().numpy())
-            next = (act-(resolution//2))/(resolution//2) #TODO: Why?
-            _, _, dones, info = env.step(next, transform=False)
+            act = env.GP.get_next_point(return_idx = False)
+            _, _, dones, info = env.step(act, transform=False)
             if torch.sum(dones) > 0:
                 rewards += info["episodic_returns"][dones].tolist()
                 lengths += info["episodic_length"][dones].tolist()

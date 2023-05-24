@@ -158,14 +158,15 @@ class GP:
 
         return self.mean[idx], self.std[idx], self.EI[idx], self.UCB[idx]
 
-    def get_next_point(self, biggest, e = 0.001):
-
-        best_indices = []
+    def get_next_point(self, return_idx = True):
+        EI = self.EI.cpu().numpy()
+        best_indices = []   
         for i in range(self.batch_size):
-            best_index = np.unravel_index(np.argmax(self.EI[i], axis=None), self.EI[i].shape)
+            best_index = np.unravel_index(np.argmax(EI[i], axis=None), EI[i].shape)
             best_indices.append(best_index)
 
-        return torch.tensor(best_indices).to(torch.device("cuda")) 
+        idx = torch.tensor(best_indices).to(torch.device("cuda")) 
+        return idx if return_idx else idx/self.resolution
 
     def render(self, show = False):
         plt.close()
