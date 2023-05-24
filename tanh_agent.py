@@ -27,7 +27,7 @@ class Agent(nn.Module):
             raise ValueError("Only dims = 2 or dims = 3 is currently supported")
         
         self.actor_cnn = nn.Sequential(
-            conv(3, 32, kernel_size=4, stride=1),
+            conv(observation_space.shape[1], 32, kernel_size=4, stride=1),
             nn.ReLU(),
             conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),
@@ -64,7 +64,7 @@ class Agent(nn.Module):
                                          nn.Linear(64, dims))#nn.Parameter(torch.ones((dims, ))*0.2)#nn.Linear(n_flatten, 3)
 
         self.critic_cnn = nn.Sequential(
-            conv(3, 32, kernel_size=4, stride=1),
+            conv(observation_space.shape[1], 32, kernel_size=4, stride=1),
             nn.ReLU(),
             conv(32, 32, kernel_size=4, stride=1),
             nn.ReLU(),

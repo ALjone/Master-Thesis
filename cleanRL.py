@@ -37,7 +37,7 @@ def parse_args():
         help="the learning rate of the optimizer")
     parser.add_argument("--num-envs", type=int, default=1,
         help="the number of parallel game environments")
-    parser.add_argument("--num-steps", type=int, default=32,
+    parser.add_argument("--num-steps", type=int, default=16,
         help="the number of steps to run in each environment per policy rollout")
     parser.add_argument("--anneal-lr", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggle learning rate annealing for policy and value networks")
@@ -63,7 +63,7 @@ def parse_args():
         help="the maximum norm for the gradient clipping")
     parser.add_argument("--target-kl", type=float, default=0.3,
         help="the target KL divergence threshold")
-    parser.add_argument("--batch-size", type=float, default=512,
+    parser.add_argument("--batch-size", type=float, default=1024,
         help="batch size")
     parser.add_argument("--resolution", type=int, default=30,
         help="resolution")
@@ -139,7 +139,7 @@ if __name__ == "__main__":
                 values[step] = value.flatten()
             actions_before_tanh[step] = action_before_tanh
             logprobs[step] = logprob
-            stds[step] = torch.mean(std, dim = 1) #Save the std just for reporting
+            stds[step] = torch.mean(std, dim = 1) #Save the std just for reporting, mean over the number of dims
 
             # TRY NOT TO MODIFY: execute the game and log data.
             (next_img_obs, next_time_obs), reward, next_done, info = env.step(action_before_tanh, True) #, False if isinstance(agent, tanh_Agent) else True)

@@ -44,7 +44,7 @@ class BlackBox():
 
         #Things for the env
         self.observation_space = spaces.Box(low=0, high=1, shape=
-                    ((batch_size, 3) + tuple(resolution for _ in range(dims))), dtype=np.float32)
+                    ((batch_size, 5) + tuple(resolution for _ in range(dims))), dtype=np.float32)
         self.action_space = spaces.Box(low = self.action_min, high = self.action_max, shape = (batch_size, dims), dtype=np.float32)
 
         self.reward_range = (0, 1) 
@@ -134,7 +134,7 @@ class BlackBox():
                 self.actions_for_gp[i].append(act[num])
                 self.values_for_gp[i].append(action_value[num] if len(idx) > 1 else action_value)
 
-            self.grid[(idx, 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(idx, 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
+            self.grid[(idx, 4) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(idx, 4) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
 
             #Update timestuff
             self.best_prediction[idx] = torch.maximum(self.best_prediction[idx], action_value)
@@ -210,17 +210,19 @@ class BlackBox():
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
 
-        mean, interval = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
+        mean, interval, EI, UCB = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
 
         self.grid[idx, 0] = mean
         self.grid[idx, 1] = interval
+        self.grid[idx, 2] = EI
+        self.grid[idx, 3] = UCB
 
     def _get_state(self):
         #TODO: This uses illegal information in that it is providing the actual max of the time function
         new_grid = torch.clone(self.grid)
         #new_grid[:, 0] = new_grid[:, 0]/self.best_prediction[:, None, None, None]
         #new_grid[:, 1] = new_grid[:, 1]/self.best_prediction[:, None, None, None] #TODO: Is it correct to divide the std with the biggest prediction? Or should it be by biggest std? Ask Nello?
-        new_grid[:, 2] = new_grid[:, 2]/self.T
+        new_grid[:, 2] = new_grid[:, 4]/self.T
 
         return new_grid, self.time
 
@@ -272,7 +274,7 @@ class BlackBox():
         #Update all the different squares that the action affected
         self._update_grid_with_GP()
 
-        self.grid[(slice(None), 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(slice(None), 2) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
+        self.grid[(slice(None), 4) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(slice(None), 4) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
 
         #Update timestuff
         self.time = self.time + time

@@ -5,7 +5,7 @@ import gpytorch
 from gpytorch.kernels import RBFKernel, MaternKernel#, CosineKernel, PolynomialKernel, LinearKernel
 import torch
 from matplotlib import pyplot as plt
-
+from scipy.stats import norm
 
 class ExactGPModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood, batch_size, kernel, dims):
@@ -49,6 +49,9 @@ class GP:
         self.approximate = approximate
         self.mean = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
         self.std = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
+        self.EI = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
+        self.UCB = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
+        self.biggest = torch.zeros((self.batch_size, ))
 
         if dims == 2:
             test_x = torch.linspace(self.min_, self.max_, self.resolution)
@@ -130,40 +133,36 @@ class GP:
         #TODO: Scale back?
         self.mean[idx] = observed_pred.mean.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
         self.std[idx] = observed_pred.stddev.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
-        self.lower_confidence, self.upper_confidence = observed_pred.confidence_region()
+        _, UCB = observed_pred.confidence_region()
+        self.UCB[idx] = UCB.reshape((-1, ) + tuple(self.resolution for _ in range(self.dims)))
 
-        return self.mean[idx], self.std[idx]
-    
-    def get_next_point(self, acquisition, biggest):
-        best_point = None
-        best_ei = -np.inf
-        mean = self.mean
-        std = self.std
-        for i in range(mean.shape[1]):
-            for j in range(mean.shape[2]):
-                ei = acquisition(mean[0, i,j], std[0, i,j], biggest)
-                if ei > best_ei:
-                    best_point = (i,j)
-                    best_ei = ei
-        return best_point
-    
+        mean = self.mean[idx].cpu()
+        std = self.std[idx].cpu()
+
+        with torch.no_grad():
+            # Compute Z scores
+            biggest = torch.amax(self.y, dim=(1)).unsqueeze(1).unsqueeze(1).cpu()
+            e = 0.001 #TODO: Hyperparameter tune e
+            Z = (mean - biggest - e) / std
+
+            EI = ((mean - biggest - e) * norm.cdf(Z) + std * norm.pdf(Z)).to(torch.device("cuda")).to(torch.float)
+
+            min_values = torch.amin(EI, dim=(1, 2)).unsqueeze(1).unsqueeze(1)
+            max_values = torch.amax(EI, dim=(1, 2)).unsqueeze(1).unsqueeze(1)
+
+            # Normalize the tensor within each batch
+            normalized_EI = (EI - min_values) / (max_values - min_values)
+
+            # Compute expected improvement for all points in batch
+        self.EI[idx] = normalized_EI
+
+        return self.mean[idx], self.std[idx], self.EI[idx], self.UCB[idx]
 
     def get_next_point(self, biggest, e = 0.001):
-        from scipy.stats import norm
-        mean = self.mean.cpu()
-        std = self.std.cpu()
-
-        # Compute Z scores
-        Z = (mean - biggest - e) / std
-
-        # Compute expected improvement for all points in batch
-        improvement = (mean - biggest - e) * norm.cdf(Z) + std * norm.pdf(Z)
-
-        # Find the indices of the best points for each element in the batch
 
         best_indices = []
         for i in range(self.batch_size):
-            best_index = np.unravel_index(np.argmax(improvement[i], axis=None), improvement[i].shape)
+            best_index = np.unravel_index(np.argmax(self.EI[i], axis=None), self.EI[i].shape)
             best_indices.append(best_index)
 
         return torch.tensor(best_indices).to(torch.device("cuda")) 
