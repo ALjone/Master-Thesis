@@ -1,4 +1,6 @@
 Prio:
+    Pix-2-Pix
+    Pretraine på EI
     Visualisere sannsynlighetstettheten
     Logge, underveis, distansen fra maks EI til maks sannsynlighetstetthet
     Hyperparameter søk på epsilon i EI

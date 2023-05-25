@@ -1,10 +1,10 @@
 import torch        
 from batched_env import BlackBox
-from tanh_agent import Agent as tanh_agent
+from agents.tanh_agent import Agent as tanh_agent
 from matplotlib import pyplot as plt
 
 env = BlackBox(30, batch_size=2, dims = 2)
-agent: tanh_agent = torch.load("Pretrained_tanh_agent.t")
+agent: tanh_agent = torch.load("Pretrained_tanh_agent_2.t")
 
 s, t = env.reset()
 

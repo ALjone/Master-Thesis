@@ -40,6 +40,8 @@ class BlackBox():
         self.action_max = 1
         self.action_min = -1
 
+        assert self.action_min == -1 and self.action_max == 1, "Action range needs to be (-1, 1), otherwise fix step"
+
         assert self.action_max == 1, "Fix transform action if you want to use action max other than 1"
 
         #Things for the env
@@ -210,9 +212,9 @@ class BlackBox():
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
 
-        mean, interval, EI, _ = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
+        mean, std, EI, _ = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
         self.grid[idx, 0] = mean
-        self.grid[idx, 1] = interval
+        self.grid[idx, 1] = std
         self.grid[idx, 2] = EI
 
     def _get_state(self):
@@ -238,19 +240,21 @@ class BlackBox():
             output.append(self._transform_action(a, self.x_max, self.x_min))
         return torch.stack(output, dim = 1).to(torch.device("cuda"))
 
-    def step(self, action, transform = False) -> Tuple[torch.Tensor, float, bool]:
+    def step(self, action, transform = False, isindex = True) -> Tuple[torch.Tensor, float, bool]:
         """Completes the given action and returns the new map"""
+        if not isindex:
+            #Clip actions
+            if transform:
+                torch.tanh(action, out = action)
 
-        #Clip actions
-        if transform:
-            torch.tanh(action, out = action)
+            #Transform from -1 to 1 -> current domain
+            act = self._transform_actions([action[:, i] for i in range(self.dims)])
 
-        #Transform from -1 to 1 -> current domain
-        act = self._transform_actions([action[:, i] for i in range(self.dims)])
-
-        #Find the indices of the different overlapping boxes
-        ind = self._find_indices(act)
-
+            #Find the indices of the different overlapping boxes
+            ind = self._find_indices(act)
+        else:
+            ind = action
+            act = (action-(self.resolution//2))/(self.resolution//2)
 
         #Find the time and value for this action
         time = self._t(ind)

@@ -5,8 +5,9 @@ import random
 import time
 from distutils.util import strtobool
 from batched_env import BlackBox
-from agent import Agent
-from tanh_agent import Agent as tanh_Agent
+from agents.agent import Agent
+from agents.tanh_agent import Agent as tanh_Agent
+from agents.pix_2_pix_agent import Agent as pix_agent
 
 import gym
 import numpy as np
@@ -98,7 +99,8 @@ if __name__ == "__main__":
     # env setup
     env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution, dims = args.dims, print_ = True)
 
-    agent = torch.load("Pretrained_tanh_agent.t") if args.pretrained else tanh_Agent(env.observation_space, args.dims).to(device)
+    #agent = torch.load("Pretrained_tanh_agent.t") if args.pretrained else tanh_Agent(env.observation_space, args.dims).to(device)
+    agent = pix_agent(env.observation_space, args.dims).to(device)
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5, weight_decay=1e-4)
 
     # ALGO Logic: Storage setup
