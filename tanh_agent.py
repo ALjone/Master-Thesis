@@ -21,28 +21,35 @@ class Agent(nn.Module):
         self.dims = dims
         if dims == 3:
             conv = nn.Conv3d
+            bn = nn.BatchNorm3d
         elif dims == 2:
             conv = nn.Conv2d
+            bn = nn.BatchNorm2d
         else: 
             raise ValueError("Only dims = 2 or dims = 3 is currently supported")
         
         self.actor_cnn = nn.Sequential(
-            conv(observation_space.shape[1], 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
+            conv(observation_space.shape[1], 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
             nn.Flatten(),
         )
 
@@ -52,41 +59,48 @@ class Agent(nn.Module):
                 torch.as_tensor(observation_space.sample()[0, None]).float()
             ).shape[1]+1
 
+
         self.action_mean = nn.Sequential(nn.Linear(n_flatten, 128),
-                                         nn.ReLU(),
+                                         nn.LeakyReLU(),
                                          nn.Linear(128, 64),
-                                         nn.ReLU(),
+                                         nn.LeakyReLU(),
                                          nn.Linear(64, dims))
+        
         self.action_logstd = nn.Sequential(nn.Linear(n_flatten, 128),
-                                         nn.ReLU(),
+                                         nn.LeakyReLU(),
                                          nn.Linear(128, 64),
-                                         nn.ReLU(),
-                                         nn.Linear(64, dims))#nn.Parameter(torch.ones((dims, ))*0.2)#nn.Linear(n_flatten, 3)
+                                         nn.LeakyReLU(),
+                                         nn.Linear(64, dims))
 
         self.critic_cnn = nn.Sequential(
-            conv(observation_space.shape[1], 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
-            conv(32, 32, kernel_size=4, stride=1),
-            nn.ReLU(),
+            conv(observation_space.shape[1], 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
+            conv(32, 32, kernel_size=5, stride=1),
+            bn(32),
+            nn.LeakyReLU(),
             nn.Flatten(),
         )
 
         self.critic = nn.Sequential(nn.Linear(n_flatten, 128),
-                                         nn.ReLU(),
+                                         nn.LeakyReLU(),
                                          nn.Linear(128, 64),
-                                         nn.ReLU(),
+                                         nn.LeakyReLU(),
                                          nn.Linear(64, 1))
 
         print("Running with", self.count_parameters(), "parameters")
@@ -97,7 +111,7 @@ class Agent(nn.Module):
         x = self.actor_cnn(observations)
         x = torch.concatenate((x, time.unsqueeze(1)), dim = 1)
         action_mean = self.action_mean(x) #Batch dim, (Mean, Std), (x, y, z)
-        action_std = torch.exp(self.action_logstd(x))
+        action_std = torch.nn.functional.softplus(self.action_logstd(x))
 
         x = self.critic_cnn(observations)
         x = torch.concatenate((x, time.unsqueeze(1)), dim = 1)

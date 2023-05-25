@@ -166,8 +166,8 @@ class GP:
             best_indices.append(best_index)
 
         idx = torch.tensor(best_indices).to(torch.device("cuda")) 
-        return idx if return_idx else idx/self.resolution
-
+        return idx if return_idx else ((idx+1)-(self.resolution//2))/(self.resolution//2)
+    
     def render(self, show = False):
         plt.close()
         plt.cla()

@@ -43,8 +43,17 @@ class Agent(nn.Module):
                 torch.as_tensor(observation_space.sample()[0, None]).float()
             ).shape[1]+1
 
-        self.action_mean = nn.Linear(n_flatten, dims)
-        self.action_logstd = nn.Linear(n_flatten, dims)#nn.Parameter(torch.ones((dims, ))*0.2)#nn.Linear(n_flatten, 3)
+        self.action_mean = nn.Sequential((nn.Linear(n_flatten, 64),
+                                          nn.ReLU(),
+                                          nn.Linear(64, 32),
+                                          nn.ReLU(),
+                                          nn.Linear(32, dims)))
+        
+        self.action_logstd = nn.Sequential((nn.Linear(n_flatten, 64),
+                                          nn.ReLU(),
+                                          nn.Linear(64, 32),
+                                          nn.ReLU(),
+                                          nn.Linear(32, dims)))
 
         self.critic_cnn = nn.Sequential(
             conv(3, 32, kernel_size=4, stride=1),
@@ -60,7 +69,11 @@ class Agent(nn.Module):
             nn.Flatten(),
         )
 
-        self.critic = nn.Linear(n_flatten, 1)
+        self.critic = nn.Sequential((nn.Linear(n_flatten, 64),
+                                          nn.ReLU(),
+                                          nn.Linear(64, 32),
+                                          nn.ReLU(),
+                                          nn.Linear(32, dims)))
 
         print("Running with", self.count_parameters(), "parameters")
 
