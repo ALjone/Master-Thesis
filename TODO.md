@@ -1,5 +1,5 @@
 Prio:
-    Pix-2-Pix
+    Add dimension to state with distance to closest tested points
     Pretraine på EI
     Visualisere sannsynlighetstettheten
     Logge, underveis, distansen fra maks EI til maks sannsynlighetstetthet
