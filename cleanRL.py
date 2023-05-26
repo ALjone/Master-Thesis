@@ -56,7 +56,7 @@ def parse_args():
         help="the surrogate clipping coefficient")
     parser.add_argument("--clip-vloss", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="Toggles whether or not to use a clipped loss for the value function, as per the paper.")
-    parser.add_argument("--ent-coef", type=float, default=0.01,
+    parser.add_argument("--ent-coef", type=float, default=0.001,
         help="coefficient of the entropy")
     parser.add_argument("--vf-coef", type=float, default=0.5,
         help="coefficient of the value function")
@@ -139,14 +139,13 @@ if __name__ == "__main__":
 
             # ALGO LOGIC: action logic
             with torch.no_grad():
-                action_before_tanh, logprob, _, value, std = agent.get_action_and_value(next_img_obs, next_time_obs)
+                action_before_tanh, logprob, _, value = agent.get_action_and_value(next_img_obs, next_time_obs)
                 values[step] = value.flatten()
             actions_before_tanh[step] = action_before_tanh
             logprobs[step] = logprob
-            stds[step] = torch.mean(std, dim = 1) #Save the std just for reporting, mean over the number of dims
 
             # TRY NOT TO MODIFY: execute the game and log data.
-            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action_before_tanh, True) #, False if isinstance(agent, tanh_Agent) else True)
+            (next_img_obs, next_time_obs), reward, next_done, info = env.step(action_before_tanh) #, False if isinstance(agent, tanh_Agent) else True)
             rewards[step] = reward.view(-1)
 
             if torch.sum(next_done) > 0:
@@ -192,7 +191,7 @@ if __name__ == "__main__":
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
 
-                _, newlogprob, entropy, newvalue, _ = agent.get_action_and_value(b_img_obs[mb_inds], b_time_obs[mb_inds], b_actions_before_tanh.long()[mb_inds])
+                _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_img_obs[mb_inds], b_time_obs[mb_inds], b_actions_before_tanh.long()[mb_inds])
                 logratio = newlogprob - b_logprobs[mb_inds]
                 ratio = logratio.exp()
 
@@ -261,6 +260,6 @@ if __name__ == "__main__":
         writer.add_scalar("performance/episodic_return", np.mean(episodic_returns), global_step)
         writer.add_scalar("performance/episodic_length", np.mean(episodic_lengths), global_step)
         writer.add_scalar("performance/portion_of_max", np.mean(episodic_peaks), global_step)
-        torch.save(agent, "model.t")
+        torch.save(agent.state_dict(), "model.t")
 
     writer.close()

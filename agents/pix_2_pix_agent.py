@@ -128,6 +128,9 @@ class Agent(nn.Module):
 
     def forward(self, observations: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
         observations = observations.squeeze()
+        if observations.isnan().any():
+            print("Found NaN in observation!!!")
+            print(observations.isnan().sum().item(), "NaNs founds")
         x = self.conv(observations)
 
         action = self.unit_output(x)
@@ -144,23 +147,24 @@ class Agent(nn.Module):
 
     def get_action_and_value(self, img, time, action=None):
         #TODO!!! We take in action, but find logprob of x_t?
-        action, critic_output = self(img, time)
+        actor_output, critic_output = self(img, time)
 
-        categorical = Categorical(logits = action.flatten(1))
+        categorical = Categorical(logits = actor_output.flatten(1))
         if action is None:
             action = categorical.sample()  # for reparameterization trick (mean + std * N(0,1))
-        
+        else: 
+            action = action[:, 0]*actor_output.size(2)+action[:, 1]
         log_prob = categorical.log_prob(action)
 
         # Convert the flattened indices to row and column indices
-        row_indices = action // action.size(2)
-        col_indices = action % action.size(2)
+        row_indices = action // actor_output.size(2)
+        col_indices = action % actor_output.size(2)
 
         # Stack the row and column indices to create the final tensor of shape (batch, 2)
         indices_tensor = torch.stack((row_indices, col_indices), dim=1)
 
         #TODO: Should this be / then % or opposite?
-        return indices_tensor, log_prob, categorical.entropy().sum(1), critic_output
+        return indices_tensor, log_prob, categorical.entropy(), critic_output
     
 
     def count_parameters(self):

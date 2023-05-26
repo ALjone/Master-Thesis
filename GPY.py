@@ -156,6 +156,16 @@ class GP:
             # Compute expected improvement for all points in batch
         self.EI[idx] = normalized_EI
 
+        if self.mean.isnan().sum() > 0:
+            print("Found NaNs in mean!")
+            print("Found", self.mean.isnan().sum().item(), "NaNs")
+        if self.std.isnan().sum() > 0:
+            print("Found NaNs in std!")
+            print("Found", self.std.isnan().sum().item(), "NaNs")
+        if self.EI.isnan().sum() > 0:
+            print("Found NaNs in EI!")
+            print("Found", self.EI.isnan().sum().item(), "NaNs")
+
         return self.mean[idx], self.std[idx], self.EI[idx], self.UCB[idx]
 
     def get_next_point(self, return_idx = True):
