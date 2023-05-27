@@ -78,7 +78,7 @@ class GlobalBlock(nn.Module):
         # Batch_size x 12 --> Batch_size x 12 x 1 x 1 --> Batch_size x 12 x 48 x 48
 
         x = x.unsqueeze(dim = -1).unsqueeze(dim = -1)
-        x = x.repeat(1,1,48,48)
+        x = x.repeat(1,1,30,30)
         return x
 
 class Agent(nn.Module):
@@ -158,7 +158,7 @@ class Agent(nn.Module):
         if observations.isnan().any():
             print("Found NaN in observation!!!")
             print(observations.isnan().sum().item(), "NaNs founds")
-        x = self.conv(torch.cat((observations, global_features)))
+        x = self.conv(torch.stack((observations, global_features), dim = 1))
 
         action = self.unit_output(x)
 
