@@ -69,8 +69,8 @@ class GlobalBlock(nn.Module):
         #self.fc1 = nn.Linear(13, 64)
         #self.fc2 = nn.Linear(64, 13)
 
-        self.fc1 = nn.Linear(9, 16)
-        self.fc2 = nn.Linear(16, 12)
+        self.fc1 = nn.Linear(1, 16)
+        self.fc2 = nn.Linear(16, 1)
         
     def forward(self, x):
         x = self.activation(self.fc1(x))
@@ -114,7 +114,7 @@ class Agent(nn.Module):
 
 
         #Make global features part
-        self.global_block =  GlobalBlock()
+        self.global_block =  GlobalBlock() #TODO: Remove
 
         self.conv = nn.Sequential(*blocks)
 
@@ -154,7 +154,7 @@ class Agent(nn.Module):
 
     def forward(self, observations: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
         observations = observations.squeeze()
-        global_features = self.global_block(time)
+        global_features = self.global_block(time.unsqueeze(1))
         if observations.isnan().any():
             print("Found NaN in observation!!!")
             print(observations.isnan().sum().item(), "NaNs founds")
