@@ -10,7 +10,7 @@ import numpy as np
 from utils import rand
 
 class BlackBox():
-    def __init__(self, resolution = 30, domain = [-1, 1], batch_size = 128, num_init_points = 4, T = 120, kernels = None, dims = 3, use_GP = True, GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False, expand_size = 50, noise = None, print_ = False):
+    def __init__(self, resolution = 30, domain = [-1, 1], batch_size = 128, num_init_points = 4, T = 120, kernels = None, dims = 3, use_GP = True, upper_lower_time_bounds = (3, 5), GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False, expand_size = 50, noise = None, print_ = False):
         #TODO: Make it take in a device...
         if print_:
             print("Initialized with the following parameters:")
@@ -68,8 +68,9 @@ class BlackBox():
         self.time = torch.zeros(batch_size).to(torch.device("cuda"))
         self.grid = torch.zeros(self.observation_space.shape, dtype = torch.float32).to(torch.device("cuda"))
         self.params_for_time = {}
+        self.upper_lower_time_bounds = upper_lower_time_bounds
         for dim in range(dims):
-            self.params_for_time[dim] = rand(1, 2, size=(self.batch_size, )).to(torch.device("cuda"))
+            self.params_for_time[dim] = rand(upper_lower_time_bounds[0], upper_lower_time_bounds[1], size=(self.batch_size, )).to(torch.device("cuda"))
         self.params_for_time["constant"] = rand(2, 4, size=(self.batch_size, )).to(torch.device("cuda"))
 
         self.max_time = self._t(torch.full_like(torch.zeros((batch_size, dims)), self.x_max).to(torch.device("cuda")), idx = torch.arange(start=0, end=batch_size)).to(torch.device("cuda"))
@@ -163,7 +164,7 @@ class BlackBox():
         #NOTE: Max is 32827 seconds, min is 406
         for dim in range(self.dims):
             param = self.params_for_time[dim]
-            param[idx] = rand(1, 2, size=idx.shape[0]).to(torch.device("cuda"))
+            param[idx] = rand(self.upper_lower_time_bounds[0], self.upper_lower_time_bounds[1], size=idx.shape[0]).to(torch.device("cuda"))
             self.params_for_time[dim] = param
         constant = self.params_for_time["constant"]
         constant[idx] = rand(2, 4, size=idx.shape[0]).to(torch.device("cuda"))
