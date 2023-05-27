@@ -46,7 +46,7 @@ class BlackBox():
 
         #Things for the env
         self.observation_space = spaces.Box(low=0, high=1, shape=
-                    ((batch_size, 4) + tuple(resolution for _ in range(dims))), dtype=np.float32)
+                    ((batch_size, 5) + tuple(resolution for _ in range(dims))), dtype=np.float32)
         self.action_space = spaces.Box(low = self.action_min, high = self.action_max, shape = (batch_size, dims), dtype=np.float32)
 
         self.reward_range = (0, 1) 
@@ -77,6 +77,7 @@ class BlackBox():
 
         self.actions_for_gp = [[]]*self.batch_size
         self.values_for_gp = [[]]*self.batch_size
+        self.checked_points = torch.zeros((batch_size, ) + tuple(self.resolution for _ in range(dims)))
         self.expand_size = expand_size #NOTE: This just says how much we expand the two above to
         self.batch_step = torch.zeros((batch_size)).to(torch.long).to(torch.device("cuda")) #The tracker for what step each "env" is at 
         self.best_prediction = torch.zeros((batch_size)).to(torch.device("cuda")) #Assumes all predictions are positive
@@ -122,7 +123,7 @@ class BlackBox():
             action = torch.tensor(self.action_space.sample()).to(torch.device("cuda")) #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
             if len(action.shape) == 1: action = action.unsqueeze(0)
             #Transform from -1 to 1 -> current domain
-            act = self._transform_actions([action[idx, i] for i in range(self.dims)])
+            act = action#self._transform_actions([action[idx, i] for i in range(self.dims)])
 
             #Find the indices of the different overlapping boxes
             ind = self._find_indices(act)
@@ -131,6 +132,7 @@ class BlackBox():
             time = self._t(ind, idx)
 
             action_value = self.func_grid[(idx, ) + tuple(ind[:, i] for i in range(ind.shape[-1]))].squeeze()
+            self.grid[(idx, 3) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = 1
 
             for num, i in enumerate(idx):
                 self.actions_for_gp[i].append(act[num])
@@ -240,12 +242,9 @@ class BlackBox():
             output.append(self._transform_action(a, self.x_max, self.x_min))
         return torch.stack(output, dim = 1).to(torch.device("cuda"))
 
-    def step(self, action, transform = False, isindex = True) -> Tuple[torch.Tensor, float, bool]:
+    def step(self, action, isindex = True) -> Tuple[torch.Tensor, float, bool]:
         """Completes the given action and returns the new map"""
         if not isindex:
-            #Clip actions
-            if transform:
-                torch.tanh(action, out = action)
 
             #Transform from -1 to 1 -> current domain
             act = self._transform_actions([action[:, i] for i in range(self.dims)])
@@ -260,6 +259,7 @@ class BlackBox():
         time = self._t(ind)
 
         action_value = self.func_grid[(torch.arange(self.batch_size), ) + tuple(ind[:, i] for i in range(ind.shape[-1]))]
+        self.grid[(slice(None), 3) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = 1
 
 
         assert action_value.shape[0] == self.batch_size
@@ -298,25 +298,23 @@ class BlackBox():
         return self._get_state(), reward, dones, info
 
     def _display_axis(self, idx, axs, fig, data, title, invert = True):
-        im = axs[idx].imshow(data)
-        fig.colorbar(im, ax=axs[idx])
+        im = axs[0, idx].imshow(data)
+        fig.colorbar(im, ax=axs[0, idx])
         if invert:
-            axs[idx].invert_yaxis()
-        axs[idx].set_title(title)
+            axs[0, idx].invert_yaxis()
+        axs[0, idx].set_title(title)
 
-    def render(self, mode='human', close=False, show = True, batch_idx = 0, tanh_mean = None):
+    def render(self, mode='human', show = True, batch_idx = 0, additional = {}):
         assert self.dims == 2, "Only supported for 2D"
         if mode == "human":
-            if close:
-                plt.cla()
-                plt.close()
-            fig, axs = plt.subplots(1, 4, figsize=(20, 10))
+            fig, axs = plt.subplots(2, 5, figsize=(20, 10))
             state, _ = self._get_state()
             self._display_axis(0, axs, fig, self.func_grid[batch_idx].reshape(self.resolution, self.resolution).cpu(), "Function")
             #TODO: Add
             self._display_axis(1, axs, fig, state[batch_idx, 0].cpu(), "Mean for PPO", invert = True)
             self._display_axis(2, axs, fig, state[batch_idx, 1].cpu(), "std for PPO", invert = True)
             self._display_axis(3, axs, fig, state[batch_idx, 2].cpu(), "EI for PPO", invert = True)
+            self._display_axis(4, axs, fig, state[batch_idx, 3].cpu(), "Checked points for PPO", invert = True)
 
             max_coords = torch.argmax(self.func_grid[batch_idx]).item()
             y_max, x_max = divmod(max_coords, self.resolution)
@@ -324,18 +322,18 @@ class BlackBox():
             for i, elem in enumerate(self.actions_for_gp[batch_idx][self.num_init_points:]):
                 a = self._find_indices(elem.unsqueeze(0)).squeeze()
                 y, x = a[0], a[1]
-                axs[0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7, label = "Actions made" if i == 0 else None)
+                axs[0, 0].scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7, label = "Actions made" if i == 0 else None)
 
             for i, elem in enumerate(self.actions_for_gp[batch_idx][:self.num_init_points]):
                 a = self._find_indices(elem.unsqueeze(0)).squeeze()
                 y, x = a[0], a[1]
-                axs[0].scatter(x.cpu(), y.cpu(), c = "red", linewidths=7, label = "Initial points" if i == 0 else None)
+                axs[0, 0].scatter(x.cpu(), y.cpu(), c = "red", linewidths=7, label = "Initial points" if i == 0 else None)
 
-            if tanh_mean is not None:
-                a = self._find_indices(tanh_mean).squeeze()
-                y, x = a[0], a[1]
-                for i, ax in enumerate(axs):
-                    ax.scatter(x.cpu(), y.cpu(), c = "blue", linewidths=7, marker = 'x', label = "Agent mean" if i == 0 else None)
+            for i, (name, img) in enumerate(additional.items()):
+                img = axs[1, i].imshow(img)
+                axs[1, i].invert_yaxis() #TODO: Why?
+                axs[1, i].set_title(name)
+                fig.colorbar(img, ax=axs[1, i])
 
             #TODO: Fix this..
             #y, x = self.actions_for_gp[batch_idx, -1].cpu()
@@ -344,15 +342,13 @@ class BlackBox():
                 #axs[0].scatter(x, y, c = "green", linewidths=7)
                 #axs[1].scatter(x, y, c = "green", linewidths=7)
 
-            axs[0].scatter(x_max, y_max, c = "black", linewidths = 5)
+            axs[0, 0].scatter(x_max, y_max, c = "black", linewidths = 5)
             self._get_closeness_to_max()
             fig.suptitle(f"Percent of max at best guess: {round(self._get_closeness_to_max()[0].item(), 3)}\nPercent of max at last guess: {round(self.previous_closeness_to_max[0].item(), 3)}")
 
-            if show:
-                plt.axis("off")
-                #handles, labels = axs[0].get_legend_handles_labels()
-                fig.legend()
-                plt.show()
-            return fig, axs
+            plt.axis("off")
+            fig.legend()
+            plt.show()
+
         else:
             raise ValueError(f"Only mode 'human' supported, found: {mode}")

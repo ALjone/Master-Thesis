@@ -1,7 +1,6 @@
 Prio:
     Add dimension to state with distance to closest tested points
     Pretraine på EI
-    Visualisere sannsynlighetstettheten
     Logge, underveis, distansen fra maks EI til maks sannsynlighetstetthet
     Hyperparameter søk på epsilon i EI
     

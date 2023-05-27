@@ -88,7 +88,7 @@ class Agent(nn.Module):
         This corresponds to the number of unit for the last layer.
     """
 
-    def __init__(self, observation_space: spaces.Box, dims = 3, use_batch_norm = True):
+    def __init__(self, observation_space: spaces.Box, dims = 3, use_batch_norm = False):
         super().__init__()
         self.dims = dims
         if dims == 3:
@@ -105,7 +105,7 @@ class Agent(nn.Module):
         blocks = []
 
         #Make shared part
-        blocks.append(conv(4, 32, kernel_size=5, padding = 2))
+        blocks.append(conv(observation_space.shape[1], 32, kernel_size=5, padding = 2))
         blocks.append(nn.LeakyReLU())
         for _ in range(10-2):
             blocks.append(layer(32, 32, kernel_size=5))
@@ -121,17 +121,44 @@ class Agent(nn.Module):
 
         self.unit_output = conv(32, 1, 1)
         
-        self.critic_output = nn.Linear(32, 1)
+        self.critic_output = nn.Sequential(nn.Linear(32, 64),
+                                           nn.LeakyReLU(),
+                                           nn.Linear(64, 32),
+                                           nn.LeakyReLU(),
+                                           nn.Linear(32, 1))
 
         print("Running with", self.count_parameters(), "parameters")
+
+    def get_normalized_probs(self, logits, prob_threshold):
+        # Compute softmax probabilities from logits
+        probs = F.softmax(logits, dim=-1)
+
+        # Sort the probabilities along the category dimension
+        sorted_probs, _ = torch.sort(probs, dim=-1)
+
+        # Determine the threshold probability corresponding to the 75th percentile
+        threshold_index = int(prob_threshold * sorted_probs.size(-1))
+        threshold_prob = sorted_probs[..., threshold_index]
+
+        # Create a mask based on the threshold probability
+        mask = probs < threshold_prob.unsqueeze(-1)
+
+        # Set masked probabilities to zero
+        masked_probs = torch.where(mask, torch.zeros_like(probs), probs)
+
+        # Normalize the masked probabilities
+        normalized_probs = masked_probs / masked_probs.sum(dim=-1, keepdim=True)
+
+        return normalized_probs
 
 
     def forward(self, observations: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
         observations = observations.squeeze()
+        global_features = self.global_block(time)
         if observations.isnan().any():
             print("Found NaN in observation!!!")
             print(observations.isnan().sum().item(), "NaNs founds")
-        x = self.conv(observations)
+        x = self.conv(torch.cat((observations, global_features)))
 
         action = self.unit_output(x)
 
@@ -147,18 +174,20 @@ class Agent(nn.Module):
 
     def get_action_and_value(self, img, time, action=None):
         #TODO!!! We take in action, but find logprob of x_t?
-        actor_output, critic_output = self(img, time)
+        actor_logits, critic_output = self(img, time)
 
-        categorical = Categorical(logits = actor_output.flatten(1))
+        normalized_probs = self.get_normalized_probs(actor_logits, prob_threshold=0.8)
+
+        categorical = Categorical(probs = normalized_probs.flatten(1))
         if action is None:
             action = categorical.sample()  # for reparameterization trick (mean + std * N(0,1))
         else: 
-            action = action[:, 0]*actor_output.size(2)+action[:, 1]
+            action = action[:, 0]*actor_logits.size(2)+action[:, 1]#Turn it from (x, y) to just one indx
         log_prob = categorical.log_prob(action)
 
         # Convert the flattened indices to row and column indices
-        row_indices = action // actor_output.size(2)
-        col_indices = action % actor_output.size(2)
+        row_indices = action // actor_logits.size(2)
+        col_indices = action % actor_logits.size(2)
 
         # Stack the row and column indices to create the final tensor of shape (batch, 2)
         indices_tensor = torch.stack((row_indices, col_indices), dim=1)
@@ -173,32 +202,17 @@ class Agent(nn.Module):
     def visualize_dist(self, img, t):
         plt.cla()
         plt.close()
-        action_mean, action_std, _ = self(img, t)       
-        fig, axs = plt.subplots(action_mean.shape[1], 1)
-        for mu, variance, ax in zip(action_mean[0].squeeze().cpu().numpy(), action_std[0].squeeze().cpu().numpy(), axs):
-            sigma = variance
-            x = np.linspace(-2, 2, 100)
-            ax.plot(x, np.tanh(stats.norm.pdf(x, mu, sigma)))
-            ax.set_title(f"Variance: {round(sigma, 3)}, Mu: {round(mu, 2)}")
-            #plt.plot(x, np.tanh(stats.norm.pdf(x, mu, sigma)))
+        with torch.no_grad():
+            prob, _ = self(img, t)
+        plt.imshow(prob.cpu().numpy())
         plt.show()
 
-    def get_2d_prob(self, img, t):
-        plt.cla()
-        plt.close()
-        action_mean, action_std, _ = self(img, t)       
-        mus = action_mean[0].squeeze()
-        stds = action_std[0].squeeze()
-        normal_1 = Normal(mus[0], stds[1])
-        normal_2 = Normal(mus[1], stds[1])
-        x = torch.linspace(-1, 1, 100).to(torch.device("cuda"))
-        log_prob_1 = normal_1.log_prob(x)
-        log_prob_2 = normal_2.log_prob(x)
-        #log_prob_1 -= torch.log(1.0 - x.pow(2) + 1e-8)
-        #log_prob_2 -= torch.log(1.0 - x.pow(2) + 1e-8)
-        prob_1 = log_prob_1.exp()
-        prob_2 = log_prob_2.exp()
-        prob = torch.einsum("o, t -> ot", prob_1, prob_2)
-        print(prob.shape)
+    def get_2d_logits_and_prob(self, img, t):
+        with torch.no_grad():
+            logits, _ = self(img, t)
 
-        return prob.cpu().numpy()
+        flatten_logits = logits.view(logits.size(0), -1)
+        flattened_probs = torch.nn.functional.softmax(flatten_logits, dim=-1)
+        probs = flattened_probs.view(logits.size())
+
+        return logits.cpu().numpy(), probs.cpu().numpy()
