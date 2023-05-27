@@ -259,7 +259,7 @@ class BlackBox():
         time = self._t(ind)
 
         action_value = self.func_grid[(torch.arange(self.batch_size), ) + tuple(ind[:, i] for i in range(ind.shape[-1]))]
-        self.grid[(slice(None), 3) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = 1
+        self.grid[(torch.arange(self.batch_size), 3) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = 1
 
 
         assert action_value.shape[0] == self.batch_size
@@ -273,7 +273,7 @@ class BlackBox():
         #Update all the different squares that the action affected
         self._update_grid_with_GP()
 
-        self.grid[(slice(None), -1) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(slice(None), -1) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
+        self.grid[(torch.arange(self.batch_size), -1) + tuple(ind[:, i] for i in range(ind.shape[-1]))] = torch.maximum(time, self.grid[(torch.arange(self.batch_size), -1) + tuple(ind[:, i] for i in range(ind.shape[-1]))])
 
         #Update timestuff
         self.time = self.time + time
