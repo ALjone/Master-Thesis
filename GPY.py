@@ -150,8 +150,11 @@ class GP:
             min_values = torch.amin(EI, dim=(1, 2)).unsqueeze(1).unsqueeze(1)
             max_values = torch.amax(EI, dim=(1, 2)).unsqueeze(1).unsqueeze(1)
 
+            diff = (max_values - min_values)
+
+            diff[diff == 0] = 1
             # Normalize the tensor within each batch
-            normalized_EI = (EI - min_values) / (max_values - min_values)
+            normalized_EI = (EI - min_values) / (diff + 1e-5)
 
             # Compute expected improvement for all points in batch
         self.EI[idx] = normalized_EI
