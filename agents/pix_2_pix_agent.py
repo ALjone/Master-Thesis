@@ -105,7 +105,7 @@ class Agent(nn.Module):
         blocks = []
 
         #Make shared part
-        blocks.append(conv(observation_space.shape[1], 32, kernel_size=5, padding = 2))
+        blocks.append(conv(observation_space.shape[1]+1, 32, kernel_size=5, padding = 2))
         blocks.append(nn.LeakyReLU())
         for _ in range(10-2):
             blocks.append(layer(32, 32, kernel_size=5))
