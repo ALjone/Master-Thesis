@@ -123,7 +123,7 @@ class BlackBox():
             action = torch.tensor(self.action_space.sample()).to(torch.device("cuda")) #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
             if len(action.shape) == 1: action = action.unsqueeze(0)
             #Transform from -1 to 1 -> current domain
-            act = action#self._transform_actions([action[idx, i] for i in range(self.dims)])
+            act = action[idx]#self._transform_actions([action[idx, i] for i in range(self.dims)])
 
             #Find the indices of the different overlapping boxes
             ind = self._find_indices(act)
