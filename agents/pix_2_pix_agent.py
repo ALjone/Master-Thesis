@@ -158,7 +158,7 @@ class Agent(nn.Module):
         if observations.isnan().any():
             print("Found NaN in observation!!!")
             print(observations.isnan().sum().item(), "NaNs founds")
-        x = self.conv(torch.stack((observations, global_features), dim = 1))
+        x = self.conv(torch.cat((observations, global_features), dim = 1))
 
         action = self.unit_output(x)
 
