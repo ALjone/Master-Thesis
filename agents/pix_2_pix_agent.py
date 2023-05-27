@@ -176,9 +176,9 @@ class Agent(nn.Module):
         #TODO!!! We take in action, but find logprob of x_t?
         actor_logits, critic_output = self(img, time)
 
-        normalized_probs = self.get_normalized_probs(actor_logits, prob_threshold=0.8)
-
-        categorical = Categorical(probs = normalized_probs.flatten(1))
+        #normalized_probs = self.get_normalized_probs(actor_logits, prob_threshold=0.8)
+        logits = actor_logits**2
+        categorical = Categorical(logits = logits.flatten(1))
         if action is None:
             action = categorical.sample()  # for reparameterization trick (mean + std * N(0,1))
         else: 
