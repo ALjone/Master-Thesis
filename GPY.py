@@ -147,8 +147,8 @@ class GP:
 
             EI = ((mean - biggest - e) * norm.cdf(Z) + std * norm.pdf(Z)).to(torch.device("cuda")).to(torch.float)
 
-            min_values = torch.amin(EI, dim=(1, 2)).unsqueeze(1).unsqueeze(1)
-            max_values = torch.amax(EI, dim=(1, 2)).unsqueeze(1).unsqueeze(1)
+            min_values = torch.amin(EI, dim=tuple(i for i in range(1, self.dims+1))).unsqueeze(1).unsqueeze(1)
+            max_values = torch.amax(EI, dim=tuple(i for i in range(1, self.dims+1))).unsqueeze(1).unsqueeze(1)
 
             diff = (max_values - min_values)
 
