@@ -126,6 +126,8 @@ class Agent(nn.Module):
                                            nn.Linear(64, 32),
                                            nn.LeakyReLU(),
                                            nn.Linear(32, 1))
+        
+        self.positional_weighting = nn.Parameter(torch.ones(observation_space.shape[2:]).unsqueeze(0))
 
         print("Running with", self.count_parameters(), "parameters")
 
@@ -160,7 +162,7 @@ class Agent(nn.Module):
             print(observations.isnan().sum().item(), "NaNs founds")
         x = self.conv(torch.cat((observations, global_features), dim = 1))
 
-        action = self.unit_output(x)
+        action = self.unit_output(x)#*self.positional_weighting
 
 
         critic = self.critic_output(nn.AvgPool2d(x.shape[-2])(x).flatten(1))
@@ -211,8 +213,12 @@ class Agent(nn.Module):
         with torch.no_grad():
             logits, _ = self(img, t)
 
-        flatten_logits = logits.view(logits.size(0), -1)
-        flattened_probs = torch.nn.functional.softmax(flatten_logits, dim=-1)
-        probs = flattened_probs.view(logits.size())
+        flatten_logits = logits.flatten(1)
+        flattened_probs = torch.nn.Softmax(dim=1)(flatten_logits)
+        probs = flattened_probs.reshape(logits.shape)
 
         return logits.cpu().numpy(), probs.cpu().numpy()
+    
+    def visualize_positional_weighting(self):
+        plt.imshow(self.positional_weighting.squeeze().cpu().detach().numpy())
+        plt.show()

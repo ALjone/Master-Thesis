@@ -17,8 +17,11 @@ for i in range(100):
     with torch.no_grad():
         action, _, _, _ = agent.get_action_and_value(s, t)
         logits, probs = agent.get_2d_logits_and_prob(s, t)
+    print(logits[0].max())
+    print(probs[0].max())
     normalize_probs = probs/probs[0].max()
     env.render(additional={"Agent probabilities": normalize_probs[0], "Agent logits": logits[0], "Previous probabilities": prev_probs, "Previous logits": prev_logits, "EI vs. probs" : env.grid[0, 2].cpu().numpy()-normalize_probs[0]})
+    agent.visualize_positional_weighting()
     (s, t), _, _, _ = env.step(action, isindex = True)
     prev_probs = normalize_probs[0]
     prev_logits = logits[0]

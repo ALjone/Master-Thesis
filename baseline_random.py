@@ -13,7 +13,7 @@ def run(dims):
     while not done:
         act = env.action_space.sample()
         #print("x:", next[0][0].item(), "y:", next[0][1].item())
-        _, _, done, info = env.step(torch.tensor(act).to(torch.device("cuda")), transform=False)
+        _, _, done, info = env.step(torch.tensor(act).to(torch.device("cuda")), isindex=False)
         done = done[0]
 
 
@@ -38,7 +38,7 @@ def run(n, dims, learning_rate = None, training_iters = None, approximate = None
     while len(peaks) < n:
         act = env.action_space.sample()
         #print("x:", next[0][0].item(), "y:", next[0][1].item())
-        _, _, dones, info = env.step(torch.tensor(act).to(torch.device("cuda")), transform=False)
+        _, _, dones, info = env.step(torch.tensor(act).to(torch.device("cuda")), isindex=False)
         if torch.sum(dones) > 0:
             rewards += info["episodic_returns"][dones].tolist()
             lengths += info["episodic_length"][dones].tolist()

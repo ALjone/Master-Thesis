@@ -18,9 +18,9 @@ def run(dims):
     done = False
     while not done:
         act = sklearn.get_next_point()
-        next = (make_action(act, dims)-(env.resolution//2))/(env.resolution//2)
+        next = (make_action(act, dims))
         #print("x:", next[0][0].item(), "y:", next[0][1].item())
-        _, _, done, info = env.step(next, transform=False)
+        _, _, done, info = env.step(next.long())
         done = done[0]
         sklearn.update_points(env.actions_for_gp[0][-1].cpu().numpy(), env.values_for_gp[0][-1].cpu().numpy())
 
