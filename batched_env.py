@@ -225,7 +225,7 @@ class BlackBox():
         new_grid = torch.clone(self.grid)
         new_grid[:, -1] = new_grid[:, -1]/self.T
 
-        return new_grid, self.time
+        return new_grid, self.time/self.T
 
     def _find_indices(self, action):
         #print("Action:", action)
