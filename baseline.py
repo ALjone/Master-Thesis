@@ -40,8 +40,8 @@ def baseline(run, n, dims = 2, batch_size = 512):
     print(f"Reward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}")
 
 
-n = 5000
-dims = 2
+n = 10
+dims = 3
 print("\n\n")
 
 #WITH TIME:
