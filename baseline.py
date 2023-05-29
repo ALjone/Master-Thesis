@@ -41,7 +41,7 @@ def baseline(run, n, dims = 2, batch_size = 512):
 
 
 n = 5000
-dims = 2
+dims = 3
 print("\n\n")
 
 #WITH TIME:

@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     #agent = torch.load("Pretrained_tanh_agent.t") if args.pretrained else tanh_Agent(env.observation_space, args.dims).to(device)
     agent = pix_agent(env.observation_space, args.dims).to(device)
-    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5, weight_decay=1e-5)
+    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5, weight_decay=1e-4)
 
     # ALGO Logic: Storage setup
     img_obs = torch.zeros((args.num_steps, ) + env.observation_space.shape).to(device)

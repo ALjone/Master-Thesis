@@ -60,27 +60,6 @@ class ConvBlock(nn.Module):
 
         return self.activation(x)
 
-class GlobalBlock(nn.Module):
-
-    def __init__(self) -> None:
-        super().__init__()
-
-        self.activation = nn.ReLU()
-        #self.fc1 = nn.Linear(13, 64)
-        #self.fc2 = nn.Linear(64, 13)
-
-        self.fc1 = nn.Linear(1, 16)
-        self.fc2 = nn.Linear(16, 1)
-        
-    def forward(self, x):
-        x = self.activation(self.fc1(x))
-        x = self.activation(self.fc2(x))
-        # Batch_size x 12 --> Batch_size x 12 x 1 x 1 --> Batch_size x 12 x 48 x 48
-
-        x = x.unsqueeze(dim = -1).unsqueeze(dim = -1)
-        x = x.repeat(1,1,30,30)
-        return x
-
 class Agent(nn.Module):
     """
     :param observation_space: (gym.Space)
@@ -105,16 +84,13 @@ class Agent(nn.Module):
         blocks = []
 
         #Make shared part
-        blocks.append(conv(observation_space.shape[1]+1, 32, kernel_size=5, padding = 2))
+        blocks.append(conv(observation_space.shape[1], 32, kernel_size=5, padding = 2))
         blocks.append(nn.LeakyReLU())
         for _ in range(10-2):
             blocks.append(layer(32, 32, kernel_size=5))
             if use_batch_norm:
-                blocks.append(nn.BatchNorm2d(32))
+                blocks.append(bn(32))
 
-
-        #Make global features part
-        self.global_block =  GlobalBlock() #TODO: Remove
 
         self.conv = nn.Sequential(*blocks)
 
@@ -156,11 +132,15 @@ class Agent(nn.Module):
 
     def forward(self, observations: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
         observations = observations.squeeze()
-        global_features = self.global_block(time.unsqueeze(1))
+        for i in range(len(observations.shape)-1):
+            time = time.unsqueeze(1)
+        #print(torch.ones((observations.shape[0], 1) + tuple(observations.shape[-1] for _ in range(len(observations.shape)-2))).shape)
+        #print(time.shape)
+        global_features = torch.ones((observations.shape[0], 1) + tuple(observations.shape[-1] for _ in range(len(observations.shape)-2)), device=torch.device("cuda"))*time #Make it fit the observation, with 1 channel, to stack
         if observations.isnan().any():
             print("Found NaN in observation!!!")
             print(observations.isnan().sum().item(), "NaNs founds")
-        x = self.conv(torch.cat((observations, global_features), dim = 1))
+        x = observations #self.conv(torch.cat((observations, global_features), dim = 1))
 
         action = self.unit_output(x)#*self.positional_weighting
 
