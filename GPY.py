@@ -141,7 +141,9 @@ class GP:
 
         with torch.no_grad():
             # Compute Z scores
-            biggest = torch.amax(self.y, dim=(1)).unsqueeze(1).unsqueeze(1).cpu()
+            biggest = torch.amax(self.y, dim=(1)).cpu()
+            for _ in range(self.resolution):
+                biggest = biggest.unsqueeze(1)
             e = 0.001 #TODO: Hyperparameter tune e
             Z = (mean - biggest - e) / std
 
