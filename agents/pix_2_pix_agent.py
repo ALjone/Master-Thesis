@@ -104,6 +104,7 @@ class Agent(nn.Module):
                                            nn.Linear(32, 1))
         
         self.positional_weighting = nn.Parameter(torch.ones(observation_space.shape[2:]).unsqueeze(0))
+        self.temperature = nn.Parameter(torch.ones(1)) #NOTE: Actually just a scaling factor on the output logits
 
         print("Running with", self.count_parameters(), "parameters")
 
@@ -143,7 +144,7 @@ class Agent(nn.Module):
         x = torch.cat((observations, global_features), dim = 1)
         x = self.conv(x)
 
-        action = self.unit_output(x)*self.positional_weighting
+        action = (self.unit_output(x)*self.positional_weighting)/self.temperature
 
 
         critic = self.critic_output(nn.AvgPool2d(x.shape[-2])(x).flatten(1))
