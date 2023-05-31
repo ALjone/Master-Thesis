@@ -26,7 +26,7 @@ def test_agent(env: BlackBox, agent: Agent, n: int):
     reward_avg = round(sum(rewards)/n, 4)
     length_avg = round(sum(lengths)/n, 4)
     peak_avg = round(sum(peaks)/n, 4)
-    action_avg = round(sum(actions)/n, 4)
+    action_avg = round(sum(actions)/len(actions), 4)
 
     reward_std = round(np.std(rewards)/np.sqrt(n), 4)
     length_std = round(np.std(lengths)/np.sqrt(n), 4)
@@ -36,9 +36,9 @@ def test_agent(env: BlackBox, agent: Agent, n: int):
 
     
 
-
-training_config = load_config("C:\\Users\\Audun\\Thesis\\Reinforcement_Learning\\configs\\training_config.yml")
-test_config = load_config("C:\\Users\\Audun\\Thesis\\Reinforcement_Learning\\configs\\testing_config.yml")
+path = "configs\\"
+training_config = load_config(path + "training_config.yml")
+test_config = load_config(path + "testing_config.yml")
 
 training_env = BlackBox(training_config)
 test_env = BlackBox(test_config)
