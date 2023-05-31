@@ -139,11 +139,11 @@ class Agent(nn.Module):
         if observations.isnan().any():
             print("Found NaN in observation!!!")
             print(observations.isnan().sum().item(), "NaNs founds")
-        x = self.conv(torch.cat((observations, global_features), dim = 1))
 
+        x = torch.cat((observations, global_features), dim = 1)
         x = self.conv(x)
 
-        action = self.unit_output(x)#*self.positional_weighting
+        action = self.unit_output(x)*self.positional_weighting
 
 
         critic = self.critic_output(nn.AvgPool2d(x.shape[-2])(x).flatten(1))
@@ -202,4 +202,5 @@ class Agent(nn.Module):
     
     def visualize_positional_weighting(self):
         plt.imshow(self.positional_weighting.squeeze().cpu().detach().numpy())
+        plt.gca().invert_yaxis()
         plt.show()

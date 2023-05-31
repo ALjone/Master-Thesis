@@ -1,6 +1,6 @@
-from baseline_random import run as run_random
-from baseline_sklearn import run as run_sklearn
-from baseline_gpy import run as run_gpy
+from baselines.baseline_random import run as run_random
+from baselines.baseline_sklearn import run as run_sklearn
+from baselines.baseline_gpy import run as run_gpy
 import warnings
 from tqdm import tqdm
 import numpy as np
@@ -41,7 +41,7 @@ def baseline(run, n, dims = 2, batch_size = 512):
 
 
 n = 5000
-dims = 3
+dims = 2
 print("\n\n")
 
 #WITH TIME:

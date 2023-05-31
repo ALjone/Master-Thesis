@@ -1,4 +1,6 @@
 Prio:
+    Visualize critic (with varying degrees of time)
+    Softmax learnable temperature
     Input channel arange delt på max ref Sigurd og Herman.
     Add dimension to state with distance to closest tested points
     Pretraine på EI
