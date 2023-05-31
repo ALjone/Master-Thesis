@@ -16,6 +16,7 @@ def test_agent(env: BlackBox, agent: Agent, n: int):
         while len(peaks) < n:
             act, _, _, _ = agent.get_action_and_value(s, t)
             actions.append(torch.mean(act.to(torch.float32)).item())
+            print(act)
             (s, t), _, dones, info = env.step(act)
             if torch.sum(dones) > 0:
                 rewards += info["episodic_returns"][dones].tolist()
@@ -52,7 +53,8 @@ reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, 
 print(f"Agent's performance on training env with n = {n}:")
 print(f"\tReward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}, Action: {action_avg} ± {action_std}")
 
-reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std = test_agent(test_env, model, n)
 
+
+reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std = test_agent(test_env, model, n)
 print(f"Agent's performance on testing env with n = {n}:")
 print(f"\tReward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}, Action: {action_avg} ± {action_std}")
