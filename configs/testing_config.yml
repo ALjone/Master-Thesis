@@ -14,15 +14,15 @@ expand_size: 50
 use_GP: True #Turn off if doing random
 
 #GPY
-learning_rate: 0.1
-training_iters: 200
+GP_learning_rate: 0.1
+GP_training_iters: 200
 approximate: False
 noise: None
 kernels: [RBF, Matern] #Only RBF and Matern
 
 
 #Random function
-a: [2, 7]
-b: [2, 7]
-noise_scale: 0.5
-noise_correlation: 1.5
+a: [0.01, 5]
+b: [0.01, 5]
+noise_scale: 2.5
+noise_correlation: 3.5
