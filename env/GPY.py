@@ -37,8 +37,8 @@ class ApproximateGPModel(gpytorch.models.ApproximateGP):
 class GP:
     def __init__(self, config) -> None:
         self.noise = config.noise
-        self.training_iters = config.training_iters
-        self.learning_rate = config.learning_rate
+        self.training_iters = config.GP_training_iters
+        self.learning_rate = config.GP_learning_rate
         self.kernels = config.kernels if config.kernels is not None else [RBFKernel, MaternKernel]
         self.verbose = config.verbose
         self.resolution = config.resolution
