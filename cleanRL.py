@@ -80,7 +80,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    run_name = "With positional encoding, medium entropy" #f"{args.exp_name}__{args.seed}__{int(time.time())}"
+    run_name = "With positional encoding, medium entropy, temperature" #f"{args.exp_name}__{args.seed}__{int(time.time())}"
 
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
