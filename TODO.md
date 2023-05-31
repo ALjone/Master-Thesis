@@ -1,4 +1,7 @@
 Prio:
+    Lage skikkelig config fil...!!!!!!!!!
+    Implementere Euclidean distance transform
+    Teste på RF med andre params
     Input channel arange delt på max ref Sigurd og Herman.
     Add dimension to state with distance to closest tested points
     Pretraine på EI

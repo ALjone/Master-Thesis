@@ -1,0 +1,49 @@
+#Common
+resolution: 30
+domain: [0, 1]
+batch_size: 128
+dims: 2
+verbose: 1 #1 for one time, general stuff, 2 for in depth
+pre_trained_path: models/model.t
+
+#Batched env
+num_init_points: 3
+T: 200
+time_bounds: [5, 7]
+expand_size: 50
+use_GP: True #Turn off if doing random
+
+#GPY
+learning_rate: 0.1
+training_iters: 200
+approximate: False
+noise: None
+kernels: [RBF, Matern] #Only RBF and Matern
+
+#Random function
+a: [0.01, 5]
+b: [0.01, 5]
+noise_scale: 1.5
+noise_correlation: 2.5
+
+#PPO
+total_timesteps: 10000000
+anneal_lr: True
+gae_lambda: 0.95
+num_minibatches: 1
+update_epochs: 4
+norm_adv: True
+clip_coef: 0.2
+clip_vloss: True
+vf_coef: 0.5
+max_grad_norm: 0.5
+target_kl: 0.3
+
+ent_coef: 0.05
+num_steps: 32
+learning_rate: 2.5e-4
+gamma: 1
+weight_decay: 1e-4
+
+pre_trained: True
+save_path: models/modelt.t

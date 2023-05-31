@@ -1,5 +1,5 @@
 import numpy as np
-from baseline_gpy import run
+from baselines.baseline_gpy import run
 import warnings
 from tqdm import tqdm
 warnings.filterwarnings("ignore")

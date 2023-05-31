@@ -1,11 +1,11 @@
 from tqdm import tqdm
 from sklearn_GP import GP as sklearn_GP
 from sklearn.gaussian_process.kernels import RBF
-from GPY import GP as gpy_GP
+from env.GPY import GP as gpy_GP
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from random_function import RandomFunction
+from env.random_function import RandomFunction
 from scipy.stats import norm
 import imageio
 import numpy as np
@@ -52,13 +52,13 @@ def get_next_x_y(sklearn_gp: sklearn_GP, gpy_gp: gpy_GP, x: torch.tensor, y: tor
 
 def run():
     print("Warning, this doesn't function the same as batched env. Rewrite to work like batched env by making it use the list of list stuff")
-    matrix = RandomFunction((0, 1), 30, 2, dims = 2).matrix.cpu()
+    matrix = RandomFunction().matrix.cpu()
 
     _x = np.array([[0.5, 0.7], [0.3, 0.3]])
     _y = np.array([matrix[0, int(x_[0]*30), int(x_[1]*30)] for x_ in _x]).squeeze()
 
     sklearn_gp = sklearn_GP([RBF()*1], EI, ((0, 1), (0, 1)), 30, ("One", "Two"), checked_points=_x, values_found=_y)
-    gpy_gp =  gpy_GP(None, 2, (0, 1), 30, dims = 2, verbose=0, training_iters=200, approximate=False)
+    gpy_gp =  gpy_GP()
 
     x = torch.tensor(np.tile(_x[0], (50, 1)))
     y = torch.tensor(_y[0].repeat(50))

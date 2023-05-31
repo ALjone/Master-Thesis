@@ -35,32 +35,32 @@ class ApproximateGPModel(gpytorch.models.ApproximateGP):
         
 
 class GP:
-    def __init__(self, kernels, batch_size, domain, resolution, verbose = 0, learning_rate = 0.1, training_iters = 50, dims = 3, approximate = False, noise = None) -> None:
-        self.noise = noise
-        self.training_iters = training_iters
-        self.learning_rate = learning_rate
-        self.kernels = kernels if kernels is not None else [RBFKernel, MaternKernel]
-        self.verbose = verbose
-        self.resolution = resolution
-        self.min_, self.max_ = domain[0], domain[1]
+    def __init__(self, config) -> None:
+        self.noise = config.noise
+        self.training_iters = config.training_iters
+        self.learning_rate = config.learning_rate
+        self.kernels = config.kernels if config.kernels is not None else [RBFKernel, MaternKernel]
+        self.verbose = config.verbose
+        self.resolution = config.resolution
+        self.min_, self.max_ = config.domain[0], config.domain[1]
         self.device = torch.device("cuda")
-        self.dims = dims
-        self.batch_size = batch_size
-        self.approximate = approximate
-        self.mean = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
-        self.std = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
-        self.EI = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
-        self.UCB = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(dims))).to(torch.device("cuda"))
+        self.dims = config.dims
+        self.batch_size = config.batch_size
+        self.approximate = config.approximate
+        self.mean = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
+        self.std = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
+        self.EI = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
+        self.UCB = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
         self.biggest = torch.zeros((self.batch_size, ))
 
-        if dims == 2:
+        if self.dims == 2:
             test_x = torch.linspace(self.min_, self.max_, self.resolution)
             test_y = torch.linspace(self.min_, self.max_, self.resolution)
             test_xx, test_yy = torch.meshgrid(test_x, test_y, indexing="ij")
             test_xx = test_xx.reshape(-1, 1)
             test_yy = test_yy.reshape(-1, 1)
             self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
-        elif dims == 3:
+        elif self.dims == 3:
             test_x = torch.linspace(self.min_, self.max_, self.resolution)
             test_y = torch.linspace(self.min_, self.max_, self.resolution)
             test_z = torch.linspace(self.min_, self.max_, self.resolution)
@@ -106,7 +106,7 @@ class GP:
             model, likelihood, loss = self._get_model(kernel, x, y)
             if best[0] > loss:
                 best = (loss, model, likelihood)
-            if self.verbose:
+            if self.verbose  > 1:
                 print("Kernel:", kernel, "Loss:", loss)
         
         #Save best GPR

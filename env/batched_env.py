@@ -1,41 +1,39 @@
 from typing import Tuple
 from gym import spaces
 import matplotlib.pyplot as plt
-from random_function import RandomFunction
-from tilecoder import TileCoder
-from GPY import GP
+from env.random_function import RandomFunction
+from env.tilecoder import TileCoder
+from env.GPY import GP
 import torch
 import numpy as np
-
 from utils import rand
 
 class BlackBox():
-    def __init__(self, resolution = 30, domain = [-1, 1], batch_size = 128, num_init_points = 3, T = 200, kernels = None, dims = 3, use_GP = True, upper_lower_time_bounds = (5, 7), GP_learning_rate = 0.1, GP_training_iters = 200, approximate = False, expand_size = 50, noise = None, print_ = False):
+    def __init__(self, config):
         #TODO: Make it take in a device...
-        if print_:
+        if config.verbose > 0:
             print("Initialized with the following parameters:")
-            print(f"  Resolution: {resolution} (number of grid cells in each dimension)")
-            print(f"  Domain: {domain} (range of values for each dimension)")
-            print(f"  Batch Size: {batch_size} (number of environments in each batch)")
-            print(f"  Number of Initial Points: {num_init_points} (number of initial random points per environment)")
-            print(f"  Total Time Steps: {T}")
-            print(f"  Kernels: {kernels} (kernel functions for Gaussian Process)")
-            print(f"  Dimensions: {dims} (number of dimensions in the function space)")
-            print(f"  Use Gaussian Process: {use_GP}")
-            print(f"  GP Learning Rate: {GP_learning_rate} (learning rate for Gaussian Process)")
-            print(f"  GP Training Iterations: {GP_training_iters} (number of training iterations for Gaussian Process)")
-            print(f"  Approximate: {approximate} (whether to use approximate Gaussian Process inference)")
-            print(f"  Expand Size: {expand_size} (expansion size for storing actions and values for Gaussian Process)")
-            print(f"  Noise: {noise} (noise level for Gaussian Process)")
+            print(f"  Resolution: {config.resolution} (number of grid cells in each dimension)")
+            print(f"  Domain: {config.domain} (range of values for each dimension)")
+            print(f"  Batch Size: {config.batch_size} (number of environments in each batch)")
+            print(f"  Number of Initial Points: {config.num_init_points} (number of initial random points per environment)")
+            print(f"  Total Time Steps: {config.T}")
+            print(f"  Dimensions: {config.dims} (number of dimensions in the function space)")
+            print(f"  Use Gaussian Process: {config.use_GP}")
+            print(f"  GP Learning Rate: {config.GP_learning_rate} (learning rate for Gaussian Process)")
+            print(f"  GP Training Iterations: {config.GP_training_iters} (number of training iterations for Gaussian Process)")
+            print(f"  Approximate: {config.approximate} (whether to use approximate Gaussian Process inference)")
+            print(f"  Expand Size: {config.expand_size} (expansion size for storing actions and values for Gaussian Process)")
+            print(f"  Noise: {config.noise} (noise level for Gaussian Process)")
             print()
 
-        assert batch_size > 1, "Currently only batch size bigger than 1 supported. "
+        assert config.batch_size > 1, "Currently only batch size bigger than 1 supported."
         #Set important variables
-        self.num_init_points = num_init_points
-        self.resolution = resolution
-        self.batch_size = batch_size
-        self.dims = dims
-        self.use_GP = use_GP
+        self.num_init_points = config.num_init_points
+        self.resolution = config.resolution
+        self.batch_size = config.batch_size
+        self.dims = config.dims
+        self.use_GP = config.use_GP
 
         self.action_max = 1
         self.action_min = -1
@@ -46,49 +44,48 @@ class BlackBox():
 
         #Things for the env
         self.observation_space = spaces.Box(low=0, high=1, shape=
-                    ((batch_size, 5) + tuple(resolution for _ in range(dims))), dtype=np.float32)
-        self.action_space = spaces.Box(low = self.action_min, high = self.action_max, shape = (batch_size, dims), dtype=np.float32)
+                    ((config.batch_size, 5) + tuple(config.resolution for _ in range(config.dims))), dtype=np.float32)
+        self.action_space = spaces.Box(low = self.action_min, high = self.action_max, shape = (config.batch_size, config.dims), dtype=np.float32)
 
         self.reward_range = (0, 1) 
         
         #Set the total avaiable time
-        self.T = T
+        self.T = config.T
 
         #Initialize the bounds
-        self.x_min, self.x_max = domain[0], domain[1]
+        self.x_min, self.x_max = config.domain[0], config.domain[1]
 
         self.steps = 0
 
-        self.coder = TileCoder(resolution, domain, dims = dims) #NOTE: Sorta useless atm
-        self.function_generator = RandomFunction((domain[0], domain[1]), resolution, batch_size, dims = dims)
-
-        self.names = [str(i) for i in range(len(domain)//2)]
+        self.coder = TileCoder(config.resolution, config.domain, dims = config.dims) #NOTE: Sorta useless atm
+        self.function_generator = RandomFunction(config)
 
 
-        self.time = torch.zeros(batch_size).to(torch.device("cuda"))
+
+        self.time = torch.zeros(config.batch_size).to(torch.device("cuda"))
         self.grid = torch.zeros(self.observation_space.shape, dtype = torch.float32).to(torch.device("cuda"))
         self.params_for_time = {}
-        self.upper_lower_time_bounds = upper_lower_time_bounds
-        for dim in range(dims):
-            self.params_for_time[dim] = rand(upper_lower_time_bounds[0], upper_lower_time_bounds[1], size=(self.batch_size, )).to(torch.device("cuda"))
+        self.upper_lower_time_bounds = config.time_bounds
+        for dim in range(config.dims):
+            self.params_for_time[dim] = rand(config.time_bounds[0], config.time_bounds[1], size=(self.batch_size, )).to(torch.device("cuda"))
         self.params_for_time["constant"] = rand(2, 4, size=(self.batch_size, )).to(torch.device("cuda"))
 
-        self.max_time = self._t(torch.full_like(torch.zeros((batch_size, dims)), self.x_max).to(torch.device("cuda")), idx = torch.arange(start=0, end=batch_size)).to(torch.device("cuda"))
-        assert self.max_time.shape[0] == batch_size
+        self.max_time = self._t(torch.full_like(torch.zeros((config.batch_size, config.dims)), self.x_max).to(torch.device("cuda")), idx = torch.arange(start=0, end=config.batch_size)).to(torch.device("cuda"))
+        assert self.max_time.shape[0] == config.batch_size
 
         self.actions_for_gp = [[]]*self.batch_size
         self.values_for_gp = [[]]*self.batch_size
-        self.checked_points = torch.zeros((batch_size, ) + tuple(self.resolution for _ in range(dims)))
-        self.expand_size = expand_size #NOTE: This just says how much we expand the two above to
-        self.batch_step = torch.zeros((batch_size)).to(torch.long).to(torch.device("cuda")) #The tracker for what step each "env" is at 
-        self.best_prediction = torch.zeros((batch_size)).to(torch.device("cuda")) #Assumes all predictions are positive
-        self.previous_closeness_to_max = torch.zeros((batch_size)).to(torch.device("cuda"))
+        self.checked_points = torch.zeros((config.batch_size, ) + tuple(self.resolution for _ in range(config.dims)))
+        self.expand_size = config.expand_size #NOTE: This just says how much we expand the two above to
+        self.batch_step = torch.zeros((config.batch_size)).to(torch.long).to(torch.device("cuda")) #The tracker for what step each "env" is at 
+        self.best_prediction = torch.zeros((config.batch_size)).to(torch.device("cuda")) #Assumes all predictions are positive
+        self.previous_closeness_to_max = torch.zeros((config.batch_size)).to(torch.device("cuda"))
 
         if self.use_GP:
-            self.GP = GP(kernels, batch_size, domain, self.resolution, dims=dims, learning_rate=GP_learning_rate, training_iters=GP_training_iters, approximate=approximate)
+            self.GP = GP(config)
         self.idx = torch.arange(start = 0, end = self.batch_size).to(torch.device("cuda"))
 
-        self.episodic_returns = torch.zeros((batch_size)).to(torch.device("cuda"))
+        self.episodic_returns = torch.zeros((config.batch_size)).to(torch.device("cuda"))
 
         self.reset()
 

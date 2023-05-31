@@ -1,12 +1,6 @@
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/ppo/#ppopy
-import argparse
-import os
-import random
 import time
-from distutils.util import strtobool
-from batched_env import BlackBox
-from agents.agent import Agent
-from agents.tanh_agent import Agent as tanh_Agent
+from env.batched_env import BlackBox
 from agents.pix_2_pix_agent import Agent as pix_agent
 
 import gym
@@ -15,110 +9,54 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+from utils import load_config
 
-
-def parse_args():
+def get_config():
     # fmt: off
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--exp-name", type=str, default=os.path.basename(__file__).rstrip(".py"),
-        help="the name of this experiment")
-    parser.add_argument("--seed", type=int, default=1,
-        help="seed of the experiment")
-    parser.add_argument("--torch-deterministic", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
-        help="if toggled, `torch.backends.cudnn.deterministic=False`")
-    parser.add_argument("--cuda", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
-        help="if toggled, cuda will be enabled by default")
-    parser.add_argument("--capture-video", type=lambda x: bool(strtobool(x)), default=False, nargs="?", const=True,
-        help="whether to capture videos of the agent performances (check out `videos` folder)")
+    config = load_config("configs/training_config.yml")
 
-    # Algorithm specific arguments
-    parser.add_argument("--total-timesteps", type=int, default=10000000,
-        help="total timesteps of the experiments")
-    parser.add_argument("--learning-rate", type=float, default=2.5e-4,
-        help="the learning rate of the optimizer")
-    parser.add_argument("--num-envs", type=int, default=1,
-        help="the number of parallel game environments")
-    parser.add_argument("--num-steps", type=int, default=32,
-        help="the number of steps to run in each environment per policy rollout")
-    parser.add_argument("--anneal-lr", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
-        help="Toggle learning rate annealing for policy and value networks")
-    parser.add_argument("--gamma", type=float, default=0.99,
-        help="the discount factor gamma")
-    parser.add_argument("--gae-lambda", type=float, default=0.95,
-        help="the lambda for the general advantage estimation")
-    parser.add_argument("--num-minibatches", type=int, default=1,
-        help="the number of mini-batches")
-    parser.add_argument("--update-epochs", type=int, default=4,
-        help="the K epochs to update the policy")
-    parser.add_argument("--norm-adv", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
-        help="Toggles advantages normalization")
-    parser.add_argument("--clip-coef", type=float, default=0.2,
-        help="the surrogate clipping coefficient")
-    parser.add_argument("--clip-vloss", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
-        help="Toggles whether or not to use a clipped loss for the value function, as per the paper.")
-    parser.add_argument("--ent-coef", type=float, default=0.05,
-        help="coefficient of the entropy")
-    parser.add_argument("--vf-coef", type=float, default=0.5,
-        help="coefficient of the value function")
-    parser.add_argument("--max-grad-norm", type=float, default=0.5,
-        help="the maximum norm for the gradient clipping")
-    parser.add_argument("--target-kl", type=float, default=0.3,
-        help="the target KL divergence threshold")
-    parser.add_argument("--batch-size", type=float, default=1024,
-        help="batch size")
-    parser.add_argument("--resolution", type=int, default=30,
-        help="resolution")
-    parser.add_argument("--dims", type=int, default=2,
-        help="dims")
-    parser.add_argument("--pretrained", type=bool, default=False,
-        help="Used a pretrained model")
-    args = parser.parse_args()
-    args.minibatch_size = int(args.batch_size // args.num_minibatches)
-    # fmt: on
-    return args
+    config.minibatch_size = int(config.batch_size // config.num_minibatches)
+
+
+    return config
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    run_name = "With positional encoding, medium entropy" #f"{args.exp_name}__{args.seed}__{int(time.time())}"
+    config = get_config()
+    run_name = "With positional encoding, medium entropy"
 
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
         "hyperparameters",
-        "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
+        "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(config).items()])),
     )
 
-    # TRY NOT TO MODIFY: seeding
-    #random.seed(args.seed)
-    #np.random.seed(args.seed)
-    #torch.manual_seed(args.seed)
-    #torch.backends.cudnn.deterministic = args.torch_deterministic
 
     device = torch.device("cuda")
 
     # env setup
-    env: BlackBox = BlackBox(batch_size=args.batch_size, resolution=args.resolution, dims = args.dims, print_ = True)
+    env: BlackBox = BlackBox(config)
 
     #agent = torch.load("Pretrained_tanh_agent.t") if args.pretrained else tanh_Agent(env.observation_space, args.dims).to(device)
-    agent = pix_agent(env.observation_space, args.dims).to(device)
-    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5, weight_decay=1e-4)
+    agent = pix_agent(env.observation_space, config.dims).to(device)
+    optimizer = optim.Adam(agent.parameters(), lr=config.learning_rate, eps=1e-5, weight_decay=config.weight_decay)
 
     # ALGO Logic: Storage setup
-    img_obs = torch.zeros((args.num_steps, ) + env.observation_space.shape).to(device)
-    time_obs = torch.zeros((args.num_steps, args.batch_size)).to(device)
-    actions_before_tanh = torch.zeros((args.num_steps, ) + env.action_space.shape).to(device)
-    logprobs = torch.zeros((args.num_steps, args.batch_size)).to(device)
-    rewards = torch.zeros((args.num_steps, args.batch_size)).to(device)
-    dones = torch.zeros((args.num_steps, args.batch_size)).to(device)
-    values = torch.zeros((args.num_steps, args.batch_size)).to(device)
-    stds = torch.zeros((args.num_steps, args.batch_size)).to(device)
+    img_obs = torch.zeros((config.num_steps, ) + env.observation_space.shape).to(device)
+    time_obs = torch.zeros((config.num_steps, config.batch_size)).to(device)
+    actions_before_tanh = torch.zeros((config.num_steps, ) + env.action_space.shape).to(device)
+    logprobs = torch.zeros((config.num_steps, config.batch_size)).to(device)
+    rewards = torch.zeros((config.num_steps, config.batch_size)).to(device)
+    dones = torch.zeros((config.num_steps, config.batch_size)).to(device)
+    values = torch.zeros((config.num_steps, config.batch_size)).to(device)
+    stds = torch.zeros((config.num_steps, config.batch_size)).to(device)
 
     # TRY NOT TO MODIFY: start the game
     global_step = 0
     start_time = time.time()
     next_img_obs, next_time_obs = env.reset()
-    next_done = torch.zeros(args.batch_size).to(device)
-    num_updates = args.total_timesteps // args.batch_size
+    next_done = torch.zeros(config.batch_size).to(device)
+    num_updates = config.total_timesteps // config.batch_size
     for update in range(1, num_updates + 1):
         episodic_lengths = []
         episodic_returns = []
@@ -126,13 +64,13 @@ if __name__ == "__main__":
 
         agent.eval()
         # Annealing the rate if instructed to do so.
-        if args.anneal_lr:
+        if config.anneal_lr:
             frac = 1.0 - (update - 1.0) / num_updates
-            lrnow = frac * args.learning_rate
+            lrnow = frac * config.learning_rate
             optimizer.param_groups[0]["lr"] = lrnow
 
-        for step in range(0, args.num_steps):
-            global_step += 1 * args.batch_size
+        for step in range(0, config.num_steps):
+            global_step += 1 * config.batch_size
             img_obs[step] = next_img_obs
             time_obs[step] = next_time_obs
             dones[step] = next_done
@@ -161,15 +99,15 @@ if __name__ == "__main__":
             next_value = agent.get_value(next_img_obs, next_time_obs).reshape(1, -1)
             advantages = torch.zeros_like(rewards).to(device)
             lastgaelam = 0
-            for t in reversed(range(args.num_steps)):
-                if t == args.num_steps - 1:
+            for t in reversed(range(config.num_steps)):
+                if t == config.num_steps - 1:
                     nextnonterminal = 1.0 - next_done.to(torch.long)
                     nextvalues = next_value
                 else:
                     nextnonterminal = 1.0 - dones[t + 1]
                     nextvalues = values[t + 1]
-                delta = rewards[t] + args.gamma * nextvalues * nextnonterminal - values[t]
-                advantages[t] = lastgaelam = delta + args.gamma * args.gae_lambda * nextnonterminal * lastgaelam
+                delta = rewards[t] + config.gamma * nextvalues * nextnonterminal - values[t]
+                advantages[t] = lastgaelam = delta + config.gamma * config.gae_lambda * nextnonterminal * lastgaelam
             returns = advantages + values
 
         # flatten the batch
@@ -182,13 +120,13 @@ if __name__ == "__main__":
         b_values = values.reshape(-1)
 
         # Optimizing the policy and value network
-        b_inds = np.arange(args.batch_size)
+        b_inds = np.arange(config.batch_size)
         clipfracs = []
         agent.train()
-        for epoch in range(args.update_epochs):
+        for epoch in range(config.update_epochs):
             np.random.shuffle(b_inds)
-            for start in range(0, args.batch_size, args.minibatch_size):
-                end = start + args.minibatch_size
+            for start in range(0, config.batch_size, config.minibatch_size):
+                end = start + config.minibatch_size
                 mb_inds = b_inds[start:end]
 
                 _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_img_obs[mb_inds], b_time_obs[mb_inds], b_actions_before_tanh.long()[mb_inds])
@@ -199,25 +137,25 @@ if __name__ == "__main__":
                     # calculate approx_kl http://joschu.net/blog/kl-approx.html
                     old_approx_kl = (-logratio).mean()
                     approx_kl = ((ratio - 1) - logratio).mean()
-                    clipfracs += [((ratio - 1.0).abs() > args.clip_coef).float().mean().item()]
+                    clipfracs += [((ratio - 1.0).abs() > config.clip_coef).float().mean().item()]
 
                 mb_advantages = b_advantages[mb_inds]
-                if args.norm_adv:
+                if config.norm_adv:
                     mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
 
                 # Policy loss
                 pg_loss1 = -mb_advantages * ratio
-                pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - args.clip_coef, 1 + args.clip_coef)
+                pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - config.clip_coef, 1 + config.clip_coef)
                 pg_loss = torch.max(pg_loss1, pg_loss2).mean()
 
                 # Value loss
                 newvalue = newvalue.view(-1)
-                if args.clip_vloss:
+                if config.clip_vloss:
                     v_loss_unclipped = (newvalue - b_returns[mb_inds]) ** 2
                     v_clipped = b_values[mb_inds] + torch.clamp(
                         newvalue - b_values[mb_inds],
-                        -args.clip_coef,
-                        args.clip_coef,
+                        -config.clip_coef,
+                        config.clip_coef,
                     )
                     v_loss_clipped = (v_clipped - b_returns[mb_inds]) ** 2
                     v_loss_max = torch.max(v_loss_unclipped, v_loss_clipped)
@@ -226,15 +164,15 @@ if __name__ == "__main__":
                     v_loss = 0.5 * ((newvalue - b_returns[mb_inds]) ** 2).mean()
 
                 entropy_loss = entropy.mean()
-                loss = pg_loss - args.ent_coef * entropy_loss + v_loss * args.vf_coef
+                loss = pg_loss - config.ent_coef * entropy_loss + v_loss * config.vf_coef
 
                 optimizer.zero_grad()
                 loss.backward()
-                nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
+                nn.utils.clip_grad_norm_(agent.parameters(), config.max_grad_norm)
                 optimizer.step()
 
-            if args.target_kl is not None:
-                if approx_kl > args.target_kl:
+            if config.target_kl is not None:
+                if approx_kl > config.target_kl:
                     break
 
         y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
@@ -260,6 +198,6 @@ if __name__ == "__main__":
         writer.add_scalar("performance/episodic_return", np.mean(episodic_returns), global_step)
         writer.add_scalar("performance/episodic_length", np.mean(episodic_lengths), global_step)
         writer.add_scalar("performance/portion_of_max", np.mean(episodic_peaks), global_step)
-        torch.save(agent.state_dict(), "model.t")
+        torch.save(agent.state_dict(), config.save_path)
 
     writer.close()

@@ -1,6 +1,6 @@
 import torch        
 import numpy as np
-from batched_env import BlackBox
+from env.batched_env import BlackBox
 from agents.pix_2_pix_agent import Agent
 from matplotlib import pyplot as plt
 

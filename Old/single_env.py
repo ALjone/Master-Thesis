@@ -5,7 +5,7 @@ from gym import spaces
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import io
-from tilecoder import TileCoder
+from env.tilecoder import TileCoder
 from sklearn_GP import GP
 from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel, RBF, Exponentiation, Matern, RationalQuadratic, ExpSineSquared
 from scipy.stats import norm

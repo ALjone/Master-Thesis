@@ -1,4 +1,3 @@
-from batched_env import BlackBox
 from tqdm import tqdm
 import torch
 

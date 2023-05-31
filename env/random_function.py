@@ -9,16 +9,16 @@ from utils import rand
 #f1, f2, f3 etc kan være lavdimensionelle, med en NN som genererer litt woobliness 
 
 class RandomFunction:
-    def __init__(self, domain, resolution, batch_size, noise_scale = 1.5, noise_correlation = 2.5, dims = 3) -> None:
-        self.range = domain
-        self.resolution = resolution    
-        self.noise_scale = noise_scale
-        self.batch_size = batch_size
-        self.noise_correlation = noise_correlation
+    def __init__(self, config) -> None:
+        self.range = config.domain
+        self.resolution = config.resolution    
+        self.noise_scale = config.noise_scale
+        self.batch_size = config.batch_size
+        self.noise_correlation = config.noise_correlation
         self.params = {}
         self.a_vals = (0.01, 0.5)
         self.b_vals = (0.01, 0.5)
-        self.dims = dims
+        self.dims = config.dims
         for dim in range(self.dims):
             self.params[dim] = {"a": -1*rand(self.a_vals[0], self.a_vals[1], size=(self.batch_size)),
                                 "b": rand(self.b_vals[0], self.b_vals[1], size=(self.batch_size)),
@@ -29,8 +29,8 @@ class RandomFunction:
         self.zeros = torch.zeros((self.batch_size)).to(torch.device("cuda"))
 
         self.matrix = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
-        self.max = torch.zeros((batch_size)).to(torch.device("cuda"))
-        self.min = torch.zeros((batch_size)).to(torch.device("cuda"))
+        self.max = torch.zeros((self.batch_size)).to(torch.device("cuda"))
+        self.min = torch.zeros((self.batch_size)).to(torch.device("cuda"))
         
         self.reset()
 
@@ -135,7 +135,7 @@ class RandomFunction:
 
 if __name__ == "__main__":
     #TODO: Play with parameters, they ain't good nuff. Copula for å korrelere dimensjonene
-    f = RandomFunction((-1, 1), 40, 2, dims = 2)
+    f = RandomFunction()
     for i in range(100):
         f.visualize_two_dims()
         f.reset()

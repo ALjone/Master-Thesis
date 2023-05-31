@@ -1,7 +1,9 @@
-import torch        
-from batched_env import BlackBox
+from env.batched_env import BlackBox
+from utils import load_config
 
-env = BlackBox(batch_size= 2, dims = 2, num_init_points=4)
+config = load_config("configs/training_config.yml", change_dict={"batch_size" : 2, "dims": 2, "num_init_points": 3})
+
+env = BlackBox(config = config)
 
 env.render()
 
