@@ -12,11 +12,10 @@ def test_agent(env: BlackBox, agent: Agent, n: int):
     actions = []
 
     s, t = env.reset()
-    with tqdm(total=n, desc = "Baselining GPY", leave = False) as pbar:
+    with tqdm(total=n, desc = "Testing actor", leave = False) as pbar:
         while len(peaks) < n:
             act, _, _, _ = agent.get_action_and_value(s, t)
             actions.append(torch.mean(act.to(torch.float32)).item())
-            print(act)
             (s, t), _, dones, info = env.step(act)
             if torch.sum(dones) > 0:
                 rewards += info["episodic_returns"][dones].tolist()
@@ -47,7 +46,7 @@ test_env = BlackBox(test_config)
 model = Agent(training_env.observation_space, dims = training_config.dims).to(torch.device("cuda"))
 model.load_state_dict(torch.load(training_config.pre_trained_path))
 
-n = 5000
+n = 1000
 
 reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std = test_agent(training_env, model, n)
 print(f"Agent's performance on training env with n = {n}:")

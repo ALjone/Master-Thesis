@@ -1,20 +1,19 @@
 from tqdm import tqdm
 import torch
+from env.batched_env import BlackBox
 
-def run(n, dims, learning_rate = None, training_iters = None, approximate = None, noise = None, batch_size = 512):
+def run(n, config, learning_rate = None, training_iters = None, approximate = None, noise = None):
     """use_all: Whether to use all training points (the full 50, which includes duplicates) or just without duplicates"""
     #NOTE: Shady?
-    params = {"batch_size": batch_size, "dims": dims}
     if learning_rate is not None:
-        params["GP_learning_rate"] = learning_rate
+        config.GP_learning_rate = learning_rate
     if training_iters is not None:
-        params["GP_training_iters"] = training_iters
+        config.GP_training_iters = training_iters
     if approximate is not None:
-        params["approximate"] = approximate
+        config.approximate = approximate
     if noise is not None:
-        params["noise"] = noise
-
-    env = BlackBox(**params)
+        config.noise = noise
+    env = BlackBox(config=config)
     env.reset()
 
     rewards = []

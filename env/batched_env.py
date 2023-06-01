@@ -8,6 +8,19 @@ import torch
 import numpy as np
 from utils import rand
 
+class MultiDiscrete2DActionSpace(spaces.MultiDiscrete):
+    def __init__(self, n, resolution, dims):
+        super().__init__([resolution for _ in range(n * dims)])
+        self.n = n
+        self.dims = dims
+
+    def sample(self):
+        return np.array(super().sample()).reshape((self.n, self.dims))
+
+    @property
+    def shape(self):
+        return (self.n, self.dims)
+
 class BlackBox():
     def __init__(self, config):
         #TODO: Make it take in a device...
@@ -45,7 +58,7 @@ class BlackBox():
         #Things for the env
         self.observation_space = spaces.Box(low=0, high=1, shape=
                     ((config.batch_size, 5) + tuple(config.resolution for _ in range(config.dims))), dtype=np.float32)
-        self.action_space = spaces.Box(low = self.action_min, high = self.action_max, shape = (config.batch_size, config.dims), dtype=np.float32)
+        self.action_space = MultiDiscrete2DActionSpace(self.batch_size, self.resolution, self.dims) #spaces.Box(low = self.action_min, high = self.action_max, shape = (config.batch_size, config.dims), dtype=np.float32)
 
         self.reward_range = (0, 1) 
         
@@ -118,13 +131,10 @@ class BlackBox():
             return
         #raise NotImplementedError("Needs to circumvent step, to only check init points for idx")
         for i in range(self.num_init_points):
-            action = torch.tensor(self.action_space.sample()).to(torch.device("cuda")) #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
-            if len(action.shape) == 1: action = action.unsqueeze(0)
+            ind = torch.tensor(self.action_space.sample()).to(torch.device("cuda"))[idx] #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
+            if len(ind.shape) == 1: ind = ind.unsqueeze(0)
             #Transform from -1 to 1 -> current domain
-            act = action[idx]#self._transform_actions([action[idx, i] for i in range(self.dims)])
-
-            #Find the indices of the different overlapping boxes
-            ind = self._find_indices(act)
+            act = (ind-(self.resolution//2))/(self.resolution//2)
 
             #Find the time and value for this action
             time = self._t(ind, idx)
@@ -243,7 +253,7 @@ class BlackBox():
     def step(self, action, isindex = True) -> Tuple[torch.Tensor, float, bool]:
         """Completes the given action and returns the new map"""
         if not isindex:
-
+            raise NotImplementedError("Only index is implemented as of now, though you can use ._find_indicies to transform them")
             #Transform from -1 to 1 -> current domain
             act = self._transform_actions([action[:, i] for i in range(self.dims)])
 

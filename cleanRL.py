@@ -23,7 +23,7 @@ def get_config():
 
 if __name__ == "__main__":
     config = get_config()
-    run_name = "With positional encoding, medium entropy"
+    run_name = "With positional encoding, temperature"
 
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
@@ -79,6 +79,7 @@ if __name__ == "__main__":
             with torch.no_grad():
                 action_before_tanh, logprob, _, value = agent.get_action_and_value(next_img_obs, next_time_obs)
                 values[step] = value.flatten()
+
             actions_before_tanh[step] = action_before_tanh
             logprobs[step] = logprob
 
@@ -185,6 +186,7 @@ if __name__ == "__main__":
         writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
         writer.add_scalar("charts/max_observation", next_img_obs.max(), global_step)
         writer.add_scalar("charts/min_observation", next_img_obs.min(), global_step)
+        writer.add_scalar("charts/temperature", agent.temperature.detach().cpu().numpy().item(), global_step)
         writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
         writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
         writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)

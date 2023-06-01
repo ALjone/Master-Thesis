@@ -16,8 +16,8 @@ class RandomFunction:
         self.batch_size = config.batch_size
         self.noise_correlation = config.noise_correlation
         self.params = {}
-        self.a_vals = (0.01, 0.5)
-        self.b_vals = (0.01, 0.5)
+        self.a_vals = config.a
+        self.b_vals = config.b
         self.dims = config.dims
         for dim in range(self.dims):
             self.params[dim] = {"a": -1*rand(self.a_vals[0], self.a_vals[1], size=(self.batch_size)),

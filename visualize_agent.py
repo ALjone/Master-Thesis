@@ -3,11 +3,14 @@ import numpy as np
 from env.batched_env import BlackBox
 from agents.pix_2_pix_agent import Agent
 from matplotlib import pyplot as plt
+from utils import load_config
 
-env = BlackBox(30, batch_size=2, dims = 2)
+config = load_config("configs\\training_config.yml")
+
+env = BlackBox(config)
 agent: Agent = Agent(env.observation_space, env.dims).to(torch.device("cuda"))
 #agent.load_state_dict(torch.load("model_with_positional_encoding.t"))
-agent.load_state_dict(torch.load("model.t"))
+agent.load_state_dict(torch.load("models/model_with_pos_and_temp.t"))
 
 s, t = env.reset()
 

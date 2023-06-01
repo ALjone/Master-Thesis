@@ -1,5 +1,5 @@
 Prio:
-    Lage skikkelig config fil...!!!!!!!!!
+    Lage forskjellige klasser av random functions som arver fra en hovedklasse
     Implementere Euclidean distance transform
     Teste på RF med andre params
     Input channel arange delt på max ref Sigurd og Herman.

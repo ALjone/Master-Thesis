@@ -1,7 +1,7 @@
 #Common
 resolution: 30
-domain: [0, 1]
-batch_size: 128
+domain: [-1, 1]
+batch_size: 1024
 dims: 2
 verbose: 1 #1 for one time, general stuff, 2 for in depth
 pre_trained_path: models/model.t
@@ -21,8 +21,8 @@ noise: None
 kernels: [RBF, Matern] #Only RBF and Matern
 
 #Random function
-a: [0.01, 5]
-b: [0.01, 5]
+a: [0.01, 0.5]
+b: [0.01, 0.5]
 noise_scale: 1.5
 noise_correlation: 2.5
 
@@ -39,11 +39,11 @@ vf_coef: 0.5
 max_grad_norm: 0.5
 target_kl: 0.3
 
-ent_coef: 0.05
+ent_coef: 0.02
 num_steps: 32
 learning_rate: 2.5e-4
 gamma: 1
-weight_decay: 1e-4
+weight_decay: 1.0e-4
 
 pre_trained: True
-save_path: models/modelt.t
+save_path: models/model.t
