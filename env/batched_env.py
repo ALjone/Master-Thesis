@@ -1,7 +1,8 @@
 from typing import Tuple
 from gym import spaces
 import matplotlib.pyplot as plt
-from env.random_function import RandomFunction
+from random_functions.convex_functions import RandomFunction as RandomConvex
+from random_functions.rosenbrock_functions import RandomFunction as RandomRosenbrock
 from env.tilecoder import TileCoder
 from env.GPY import GP
 import torch
@@ -71,9 +72,12 @@ class BlackBox():
         self.steps = 0
 
         self.coder = TileCoder(config.resolution, config.domain, dims = config.dims) #NOTE: Sorta useless atm
-        self.function_generator = RandomFunction(config)
-
-
+        if config.function.lower() == "rosenbrock":
+            self.function_generator = RandomRosenbrock(config)
+        elif config.function.lower() == "convex":
+            self.function_generator = RandomConvex(config)
+        else:
+            raise ValueError("Expected function to be Rosenbrock or Convex, but found: " + config.function)
 
         self.time = torch.zeros(config.batch_size).to(torch.device("cuda"))
         self.grid = torch.zeros(self.observation_space.shape, dtype = torch.float32).to(torch.device("cuda"))

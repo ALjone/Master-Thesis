@@ -1,4 +1,5 @@
 Prio:
+    Fiks config, så man bare trenger å forandre ting i en av de
     Lage forskjellige klasser av random functions som arver fra en hovedklasse
     Implementere Euclidean distance transform
     Teste på RF med andre params

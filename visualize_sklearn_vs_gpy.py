@@ -5,7 +5,7 @@ from env.GPY import GP as gpy_GP
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from env.random_function import RandomFunction
+from random_functions.convex_functions import RandomFunction
 from scipy.stats import norm
 import imageio
 import numpy as np

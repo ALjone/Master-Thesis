@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 import numpy as np
-from utils import rand
+from utils import rand, load_config
 #TODO:
 
 #Troels talked about f(x, y, z) = a*f1(x)+b*f2(y)+c*f3(z)+d*f4(x, y, z) der f4(x, y, z) er en ikke linear kombinasjon der x y z er avhengig av hverandre, med en epsilon
@@ -135,7 +135,8 @@ class RandomFunction:
 
 if __name__ == "__main__":
     #TODO: Play with parameters, they ain't good nuff. Copula for å korrelere dimensjonene
-    f = RandomFunction()
+    config = load_config("configs\\training_config.yml")
+    f = RandomFunction(config)
     for i in range(100):
         f.visualize_two_dims()
         f.reset()
