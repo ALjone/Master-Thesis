@@ -11,8 +11,8 @@ class RandomHimmelblau:
         self.noise_scale = config.noise_scale
         self.batch_size = config.batch_size
         self.noise_correlation = config.noise_correlation
-        self.a_vals = [11, 11.1]#config.himmelblau_a
-        self.b_vals = [7, 7.1]#config.himmelblau_b
+        self.a_vals = config.himmelblau_a
+        self.b_vals = config.himmelblau_b
         self.dims = config.dims
 
         x = np.linspace(self.range[0], self.range[1], self.resolution)
