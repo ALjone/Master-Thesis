@@ -201,12 +201,21 @@ if __name__ == "__main__":
         print("SPS:", (global_step / (time.time() - start_time)), "Global step:", global_step)#, "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
+        returns = []
+        peaks = []
+        lenghts = []
         for name, value in episodic_returns.items():
-            writer.add_scalar(f"performance/return_{name}", np.mean(value), global_step)
+            returns += value
+            writer.add_scalar(f"individual_performance/{name}_return", np.mean(value), global_step)
         for name, value in episodic_lengths.items():
-            writer.add_scalar(f"performance/length_{name}", np.mean(value), global_step)
+            lenghts += value
+            writer.add_scalar(f"individual_performance/{name}_length", np.mean(value), global_step)
         for name, value in episodic_peaks.items():
-            writer.add_scalar(f"performance/peak_{name}", np.mean(value), global_step)
+            peaks += value
+            writer.add_scalar(f"individual_performance/{name}_peak", np.mean(value), global_step)
+        writer.add_scalar("performance/returns", np.mean(returns), global_step)
+        writer.add_scalar("performance/peaks", np.mean(peaks), global_step)
+        writer.add_scalar("performance/lengths", np.mean(lenghts), global_step)
 
         torch.save(agent.state_dict(), "models/" + run_name + ".t")
 
