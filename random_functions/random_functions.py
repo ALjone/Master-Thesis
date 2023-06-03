@@ -1,10 +1,12 @@
 import torch
 from random_functions.rosenbrock_functions import RandomRosenbrock
 from random_functions.convex_functions import RandomConvex
+from random_functions.himmelblau_functions import RandomHimmelblau
 import numpy as np 
 import matplotlib.pyplot as plt
 str_to_class = {"rosenbrock": RandomRosenbrock,
-                "convex": RandomConvex}
+                "convex": RandomConvex,
+                "himmelblau": RandomHimmelblau}
 
 
 class RandomFunction:

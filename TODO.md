@@ -1,4 +1,6 @@
 Prio:
+    Performance metric, max of peak isn't necessarily good (if there is a very deep minima, everything else will be squashed towards close to max)
+    Prøve GP, men gange EI med en "positional weighting" matrise?
     Invertere Rosenbrock?
     Teste uten GP som input?
     Fiks config, så man bare trenger å forandre ting i en av de

@@ -21,11 +21,13 @@ noise: None
 kernels: [RBF, Matern] #Only RBF and Matern
 
 #Random function
-functions: [convex, rosenbrock] #Rosenbrock or convex for now
+functions: [convex, rosenbrock, himmelblau] #Rosenbrock or convex for now
 convex_a: [0.01, 0.5]
 convex_b: [0.01, 0.5]
 rosenbrock_a: [5, 10]
 rosenbrock_b: [50, 100]
+himmelblau_a: [8, 14] 
+himmelblau_b: [4, 10]
 noise_scale: 1.5
 noise_correlation: 2.5
 

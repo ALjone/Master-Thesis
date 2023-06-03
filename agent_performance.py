@@ -51,7 +51,7 @@ model = Agent(training_env.observation_space, dims = training_config.dims).to(to
 model.load_state_dict(torch.load(training_config.pre_trained_path))
 model.positional_weighting = torch.nn.Parameter(torch.ones_like(model.positional_weighting))
 
-n = 100000
+n = 100
 
 reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std, n_used = test_agent(training_env, model, n)
 print(f"Agent's performance on training env with n = {n_used} without positional weighting:")
@@ -61,7 +61,7 @@ model = Agent(training_env.observation_space, dims = training_config.dims).to(to
 model.load_state_dict(torch.load(training_config.pre_trained_path))
 #model.positional_weighting = torch.nn.Parameter(torch.ones_like(model.positional_weighting))
 
-n = 100000
+n = 100
 
 reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std, n_used = test_agent(training_env, model, n)
 print(f"Agent's performance on training env with n = {n_used} with positional weighting:")
