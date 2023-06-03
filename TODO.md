@@ -1,4 +1,6 @@
 Prio:
+    Invertere Rosenbrock?
+    Teste uten GP som input?
     Fiks config, så man bare trenger å forandre ting i en av de
     Lage forskjellige klasser av random functions som arver fra en hovedklasse
     Implementere Euclidean distance transform

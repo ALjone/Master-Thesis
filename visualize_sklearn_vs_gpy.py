@@ -5,7 +5,7 @@ from env.GPY import GP as gpy_GP
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from random_functions.convex_functions import RandomFunction
+from random_functions.convex_functions import RandomConvex
 from scipy.stats import norm
 import imageio
 import numpy as np
@@ -52,7 +52,7 @@ def get_next_x_y(sklearn_gp: sklearn_GP, gpy_gp: gpy_GP, x: torch.tensor, y: tor
 
 def run():
     print("Warning, this doesn't function the same as batched env. Rewrite to work like batched env by making it use the list of list stuff")
-    matrix = RandomFunction().matrix.cpu()
+    matrix = RandomConvex().matrix.cpu()
 
     _x = np.array([[0.5, 0.7], [0.3, 0.3]])
     _y = np.array([matrix[0, int(x_[0]*30), int(x_[1]*30)] for x_ in _x]).squeeze()

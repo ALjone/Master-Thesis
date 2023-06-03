@@ -6,7 +6,6 @@ import torch
 def run(n, config):
     #NOTE: Shady?
     config.use_GP = False
-    config.batch_size = 2
     env = BlackBox(config)
     env.reset()
 

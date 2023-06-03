@@ -18,12 +18,12 @@ GP_learning_rate: 0.1
 GP_training_iters: 200
 approximate: False
 noise: None
-kernels: [RBF, Matern] #Only RBF and Matern
+kernels: [RBF] #Only RBF and Matern
 
 #Random function
-function: rosenbrock
-a: [0.01, 0.5]
-b: [0.01, 0.5]
+functions: [convex, rosenbrock]
+convex_a: [0.01, 0.5]
+convex_b: [0.01, 0.5]
 rosenbrock_a: [5, 10]
 rosenbrock_b: [50, 100]
 noise_scale: 4 #0.5

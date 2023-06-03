@@ -4,13 +4,13 @@ domain: [-1, 1]
 batch_size: 1024
 dims: 2
 verbose: 1 #1 for one time, general stuff, 2 for in depth
-pre_trained_path: models/model.t
+pre_trained_path: With positional encoding, temperature, mixed func.t #models/model.t
 
 #Batched env
 num_init_points: 3
 T: 200
 time_bounds: [5, 7]
-expand_size: 50
+expand_size: 25
 use_GP: True #Turn off if doing random
 
 #GPY
@@ -21,9 +21,9 @@ noise: None
 kernels: [RBF, Matern] #Only RBF and Matern
 
 #Random function
-function: rosenbrock #Rosenbrock or convex for now
-a: [0.01, 0.5]
-b: [0.01, 0.5]
+functions: [convex, rosenbrock] #Rosenbrock or convex for now
+convex_a: [0.01, 0.5]
+convex_b: [0.01, 0.5]
 rosenbrock_a: [5, 10]
 rosenbrock_b: [50, 100]
 noise_scale: 1.5
@@ -49,4 +49,3 @@ gamma: 1
 weight_decay: 1.0e-4
 
 pre_trained: True
-save_path: models/model.t

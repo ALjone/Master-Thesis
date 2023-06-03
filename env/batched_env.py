@@ -1,8 +1,7 @@
 from typing import Tuple
 from gym import spaces
 import matplotlib.pyplot as plt
-from random_functions.convex_functions import RandomFunction as RandomConvex
-from random_functions.rosenbrock_functions import RandomFunction as RandomRosenbrock
+from random_functions.random_functions import RandomFunction
 from env.tilecoder import TileCoder
 from env.GPY import GP
 import torch
@@ -72,12 +71,7 @@ class BlackBox():
         self.steps = 0
 
         self.coder = TileCoder(config.resolution, config.domain, dims = config.dims) #NOTE: Sorta useless atm
-        if config.function.lower() == "rosenbrock":
-            self.function_generator = RandomRosenbrock(config)
-        elif config.function.lower() == "convex":
-            self.function_generator = RandomConvex(config)
-        else:
-            raise ValueError("Expected function to be Rosenbrock or Convex, but found: " + config.function)
+        self.function_generator = RandomFunction(config)
 
         self.time = torch.zeros(config.batch_size).to(torch.device("cuda"))
         self.grid = torch.zeros(self.observation_space.shape, dtype = torch.float32).to(torch.device("cuda"))
@@ -302,7 +296,8 @@ class BlackBox():
         #reward[~dones] = 0
 
         self.episodic_returns = self.episodic_returns + reward
-        info = {"peak": pred_max/true_max, "episodic_returns": self.episodic_returns.clone(), "episodic_length" : self.batch_step.clone().to(torch.float)-self.num_init_points}
+        info = {"peak": pred_max/true_max, "episodic_returns": self.episodic_returns.clone(), "episodic_length" : self.batch_step.clone().to(torch.float)-self.num_init_points,
+                "function_classes": self.function_generator.function_classes}
 
         if torch.sum(dones) > 0:
             self.reset(torch.nonzero(dones).squeeze())

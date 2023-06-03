@@ -12,8 +12,9 @@ def test_agent(env: BlackBox, agent: Agent, n: int):
     actions = []
 
     s, t = env.reset()
+    n_dones = 0
     with tqdm(total=n, desc = "Testing actor", leave = False) as pbar:
-        while len(peaks) < n:
+        while n_dones < n:
             act, _, _, _ = agent.get_action_and_value(s, t)
             actions.append(torch.mean(act.to(torch.float32)).item())
             (s, t), _, dones, info = env.step(act)
@@ -22,7 +23,8 @@ def test_agent(env: BlackBox, agent: Agent, n: int):
                 lengths += info["episodic_length"][dones].tolist()
                 peaks += info["peak"][dones].tolist()
                 pbar.update(torch.sum(dones).item())
-
+                n_dones += torch.sum(dones).item()
+    n = n_dones
     reward_avg = round(sum(rewards)/n, 4)
     length_avg = round(sum(lengths)/n, 4)
     peak_avg = round(sum(peaks)/n, 4)
@@ -32,28 +34,41 @@ def test_agent(env: BlackBox, agent: Agent, n: int):
     length_std = round(np.std(lengths)/np.sqrt(n), 4)
     peak_std = round(np.std(peaks)/np.sqrt(n), 4)
     action_std = round(np.std(actions)/np.sqrt(len(actions)), 4)
-    return reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std
+    return reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std, n
 
     
 
 path = "configs\\"
 training_config = load_config(path + "training_config.yml")
 test_config = load_config(path + "testing_config.yml")
+training_config.verbose = 0
+test_config.verbose = 0
 
 training_env = BlackBox(training_config)
 test_env = BlackBox(test_config)
 
 model = Agent(training_env.observation_space, dims = training_config.dims).to(torch.device("cuda"))
 model.load_state_dict(torch.load(training_config.pre_trained_path))
+model.positional_weighting = torch.nn.Parameter(torch.ones_like(model.positional_weighting))
 
-n = 1000
+n = 100000
 
-reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std = test_agent(training_env, model, n)
-print(f"Agent's performance on training env with n = {n}:")
+reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std, n_used = test_agent(training_env, model, n)
+print(f"Agent's performance on training env with n = {n_used} without positional weighting:")
 print(f"\tReward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}, Action: {action_avg} ± {action_std}")
 
+model = Agent(training_env.observation_space, dims = training_config.dims).to(torch.device("cuda"))
+model.load_state_dict(torch.load(training_config.pre_trained_path))
+#model.positional_weighting = torch.nn.Parameter(torch.ones_like(model.positional_weighting))
 
+n = 100000
 
-reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std = test_agent(test_env, model, n)
-print(f"Agent's performance on testing env with n = {n}:")
+reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std, n_used = test_agent(training_env, model, n)
+print(f"Agent's performance on training env with n = {n_used} with positional weighting:")
+print(f"\tReward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}, Action: {action_avg} ± {action_std}")
+
+exit()
+
+reward_avg, length_avg, peak_avg, action_avg, reward_std, length_std, peak_std, action_std, n_used = test_agent(test_env, model, n)
+print(f"Agent's performance on testing env with n = {n_used}:")
 print(f"\tReward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}, Action: {action_avg} ± {action_std}")

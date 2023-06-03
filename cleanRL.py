@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
-from utils import load_config
+from utils import load_config, metrics_per_class
 
 def get_config():
     # fmt: off
@@ -23,7 +23,7 @@ def get_config():
 
 if __name__ == "__main__":
     config = get_config()
-    run_name = "With positional encoding, temperature"
+    run_name = "With positional encoding, temperature, mixed func"
 
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
@@ -58,9 +58,9 @@ if __name__ == "__main__":
     next_done = torch.zeros(config.batch_size).to(device)
     num_updates = config.total_timesteps // config.batch_size
     for update in range(1, num_updates + 1):
-        episodic_lengths = []
-        episodic_returns = []
-        episodic_peaks = []
+        episodic_lengths = {name: [] for name in config.functions}
+        episodic_returns = {name: [] for name in config.functions}
+        episodic_peaks = {name: [] for name in config.functions}
 
         agent.eval()
         # Annealing the rate if instructed to do so.
@@ -88,12 +88,16 @@ if __name__ == "__main__":
             rewards[step] = reward.view(-1)
 
             if torch.sum(next_done) > 0:
-                returns = torch.mean(info["episodic_returns"][next_done])
-                lengths = torch.mean(info["episodic_length"][next_done])
-                peak = torch.mean(info["peak"][next_done])
-                episodic_lengths.append(lengths.item())
-                episodic_returns.append(returns.item())
-                episodic_peaks.append(peak.item())
+                mean_returns, mean_peaks, mean_lengths = metrics_per_class(info["episodic_returns"][next_done], info["peak"][next_done], info["episodic_length"][next_done], info["function_classes"][next_done], len(episodic_returns.keys()))
+                #NOTE: DOES NOT WORK!!! INDEXING ISSUES USE CHATGPTS SOLUTION
+                for i, (length_lst, peak_lst, return_lst) in enumerate(zip(episodic_lengths.values(), episodic_peaks.values(), episodic_returns.values())):
+                    if i < len(mean_lengths):
+                        if mean_lengths[i] is not None:
+                            length_lst.append(mean_lengths[i])
+                        if mean_peaks[i] is not None:
+                            peak_lst.append(mean_peaks[i])
+                        if mean_returns[i] is not None:
+                            return_lst.append(mean_returns[i])
 
         # bootstrap value if not done
         with torch.no_grad():
@@ -197,9 +201,13 @@ if __name__ == "__main__":
         print("SPS:", (global_step / (time.time() - start_time)), "Global step:", global_step)#, "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
-        writer.add_scalar("performance/episodic_return", np.mean(episodic_returns), global_step)
-        writer.add_scalar("performance/episodic_length", np.mean(episodic_lengths), global_step)
-        writer.add_scalar("performance/portion_of_max", np.mean(episodic_peaks), global_step)
-        torch.save(agent.state_dict(), config.save_path)
+        for name, value in episodic_returns.items():
+            writer.add_scalar(f"performance/return_{name}", np.mean(value), global_step)
+        for name, value in episodic_lengths.items():
+            writer.add_scalar(f"performance/length_{name}", np.mean(value), global_step)
+        for name, value in episodic_peaks.items():
+            writer.add_scalar(f"performance/peak_{name}", np.mean(value), global_step)
+
+        torch.save(agent.state_dict(), "models/" + run_name + ".t")
 
     writer.close()

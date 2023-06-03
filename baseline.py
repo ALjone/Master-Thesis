@@ -49,7 +49,7 @@ def baseline(training, run, n, dims = 2, batch_size = 512):
     print(f"\t\tReward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}")
 
 
-n = 5000
+n = 100000
 dims = 2
 print("Baselining training env\n")
 
