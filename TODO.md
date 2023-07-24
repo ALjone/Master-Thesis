@@ -1,4 +1,5 @@
 Prio:
+    Visualisere prosent av max når gjennom et løp
     Performance metric, max of peak isn't necessarily good (if there is a very deep minima, everything else will be squashed towards close to max)
     Fiks config, så man bare trenger å forandre ting i en av de
     Lage forskjellige klasser av random functions som arver fra en hovedklasse
