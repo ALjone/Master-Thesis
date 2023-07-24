@@ -1,27 +1,38 @@
 #Common
-resolution: 30
+resolution: 60
 domain: [-1, 1]
-batch_size: 1024
+batch_size: 2048 #4096 #2048
 dims: 2
 verbose: 1 #1 for one time, general stuff, 2 for in depth
-pre_trained_path: With positional encoding, temperature, mixed func.t #models/model.t
+pre_trained_path: With positional encoding, temperature, convex, relu, high ent.t #models/model.t
+layer_size: 200
+use_time: False
 
 #Batched env
 num_init_points: 3
-T: 200
-time_bounds: [5, 7]
+T_range: [80, 200]
 expand_size: 25
 use_GP: True #Turn off if doing random
+log_reward: True
 
 #GPY
-GP_learning_rate: 0.1
-GP_training_iters: 200
+GP_learning_rate: 0.1 #0.1
+GP_training_iters: 50 #150
 approximate: False
 noise: None
-kernels: [RBF, Matern] #Only RBF and Matern
+kernel_classes: [RBF]
+operation: mul
+
+#Time functions
+time_functions: [linear, polynomial]
+time_function_probabilities: [0.5, 0.5]
+constant_range: [5, 10]
+linear_range: [0, 20]
+polynomial_range: [0.1, 1.5]
+max_range: [0.3, 0.7] #Determines how large the biggest point is, not currently implemented
 
 #Random function
-functions: [convex, rosenbrock, himmelblau] #Rosenbrock or convex for now
+functions: [goldsteinprice] #Rosenbrock or convex for now
 convex_a: [0.01, 0.5]
 convex_b: [0.01, 0.5]
 rosenbrock_a: [5, 10]
@@ -29,25 +40,26 @@ rosenbrock_b: [50, 100]
 himmelblau_a: [8, 14] 
 himmelblau_b: [4, 10]
 noise_scale: 1.5
-noise_correlation: 2.5
+noise_correlation: 3.5
+max_value_range: [0.5, 2]
 
 #PPO
-total_timesteps: 10000000
+total_timesteps: 5000000
 anneal_lr: True
-gae_lambda: 0.95
-num_minibatches: 1
+gae_lambda: 0.98
+num_minibatches: 4
 update_epochs: 4
 norm_adv: True
 clip_coef: 0.2
 clip_vloss: True
-vf_coef: 0.5
+vf_coef: 1 #0.5
 max_grad_norm: 0.5
 target_kl: 0.3
 
-ent_coef: 0.02
-num_steps: 32
-learning_rate: 2.5e-4
-gamma: 1
-weight_decay: 1.0e-4
+ent_coef: 0.01
+num_steps: 16
+learning_rate: 1.0e-4
+gamma: 0.98
+weight_decay: 0 #1.0e-4
 
 pre_trained: True

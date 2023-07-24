@@ -1,0 +1,402 @@
+Running with 50 combinations
+Operation: add, Kernels: ['RBFKernel']
+Operation: mul, Kernels: ['RBFKernel']
+Operation: add, Kernels: ['MaternKernel']
+Operation: mul, Kernels: ['MaternKernel']
+Operation: add, Kernels: ['PeriodicKernel']
+Operation: mul, Kernels: ['PeriodicKernel']
+Operation: add, Kernels: ['RQKernel']
+Operation: mul, Kernels: ['RQKernel']
+Operation: add, Kernels: ['LinearKernel']
+Operation: mul, Kernels: ['LinearKernel']
+Operation: add, Kernels: ['RBFKernel', 'MaternKernel']
+Operation: mul, Kernels: ['RBFKernel', 'MaternKernel']
+Operation: add, Kernels: ['RBFKernel', 'PeriodicKernel']
+Operation: mul, Kernels: ['RBFKernel', 'PeriodicKernel']
+Operation: add, Kernels: ['RBFKernel', 'RQKernel']
+Operation: mul, Kernels: ['RBFKernel', 'RQKernel']
+Operation: add, Kernels: ['RBFKernel', 'LinearKernel']
+Operation: mul, Kernels: ['RBFKernel', 'LinearKernel']
+Operation: add, Kernels: ['MaternKernel', 'PeriodicKernel']
+Operation: mul, Kernels: ['MaternKernel', 'PeriodicKernel']
+Operation: add, Kernels: ['MaternKernel', 'RQKernel']
+Operation: mul, Kernels: ['MaternKernel', 'RQKernel']
+Operation: add, Kernels: ['MaternKernel', 'LinearKernel']
+Operation: mul, Kernels: ['MaternKernel', 'LinearKernel']
+Operation: add, Kernels: ['PeriodicKernel', 'RQKernel']
+Operation: mul, Kernels: ['PeriodicKernel', 'RQKernel']
+Operation: add, Kernels: ['PeriodicKernel', 'LinearKernel']
+Operation: mul, Kernels: ['PeriodicKernel', 'LinearKernel']
+Operation: add, Kernels: ['RQKernel', 'LinearKernel']
+Operation: mul, Kernels: ['RQKernel', 'LinearKernel']
+Operation: add, Kernels: ['RBFKernel', 'MaternKernel', 'PeriodicKernel']
+Operation: mul, Kernels: ['RBFKernel', 'MaternKernel', 'PeriodicKernel']
+Operation: add, Kernels: ['RBFKernel', 'MaternKernel', 'RQKernel']
+Operation: mul, Kernels: ['RBFKernel', 'MaternKernel', 'RQKernel']
+Operation: add, Kernels: ['RBFKernel', 'MaternKernel', 'LinearKernel']
+Operation: mul, Kernels: ['RBFKernel', 'MaternKernel', 'LinearKernel']
+Operation: add, Kernels: ['RBFKernel', 'PeriodicKernel', 'RQKernel']
+Operation: mul, Kernels: ['RBFKernel', 'PeriodicKernel', 'RQKernel']
+Operation: add, Kernels: ['RBFKernel', 'PeriodicKernel', 'LinearKernel']
+Operation: mul, Kernels: ['RBFKernel', 'PeriodicKernel', 'LinearKernel']
+Operation: add, Kernels: ['RBFKernel', 'RQKernel', 'LinearKernel']
+Operation: mul, Kernels: ['RBFKernel', 'RQKernel', 'LinearKernel']
+Operation: add, Kernels: ['MaternKernel', 'PeriodicKernel', 'RQKernel']
+Operation: mul, Kernels: ['MaternKernel', 'PeriodicKernel', 'RQKernel']
+Operation: add, Kernels: ['MaternKernel', 'PeriodicKernel', 'LinearKernel']
+Operation: mul, Kernels: ['MaternKernel', 'PeriodicKernel', 'LinearKernel']
+Operation: add, Kernels: ['MaternKernel', 'RQKernel', 'LinearKernel']
+Operation: mul, Kernels: ['MaternKernel', 'RQKernel', 'LinearKernel']
+Operation: add, Kernels: ['PeriodicKernel', 'RQKernel', 'LinearKernel']
+Operation: mul, Kernels: ['PeriodicKernel', 'RQKernel', 'LinearKernel']
+1/50  Kernels: ['RBFKernel'] Operation: add
+        Reward: 0.125 ± 0.0002, Length: 2.9087 ± 0.0015, Peak: 0.561 ± 0.0004
+
+
+2/50  Kernels: ['RBFKernel'] Operation: mul
+        Reward: 0.128 ± 0.0002, Length: 2.9044 ± 0.0015, Peak: 0.6088 ± 0.0004
+
+
+3/50  Kernels: ['MaternKernel'] Operation: add
+        Reward: 0.1091 ± 0.0002, Length: 2.9095 ± 0.0015, Peak: 0.5248 ± 0.0004
+
+
+4/50  Kernels: ['MaternKernel'] Operation: mul
+        Reward: 0.1258 ± 0.0002, Length: 2.8948 ± 0.0015, Peak: 0.5734 ± 0.0004
+
+
+5/50  Kernels: ['PeriodicKernel'] Operation: add
+        Reward: 0.1111 ± 0.0002, Length: 2.8963 ± 0.0014, Peak: 0.5607 ± 0.0004
+
+
+6/50  Kernels: ['PeriodicKernel'] Operation: mul
+Unstable kernel
+
+7/50  Kernels: ['RQKernel'] Operation: add
+        Reward: 0.1145 ± 0.0002, Length: 2.904 ± 0.0015, Peak: 0.5466 ± 0.0004
+
+
+8/50  Kernels: ['RQKernel'] Operation: mul
+        Reward: 0.1107 ± 0.0002, Length: 2.9052 ± 0.0015, Peak: 0.5184 ± 0.0004
+
+
+9/50  Kernels: ['LinearKernel'] Operation: add
+        Reward: 0.0363 ± 0.0002, Length: 3.5103 ± 0.0051, Peak: 0.5126 ± 0.0004
+
+
+10/50  Kernels: ['LinearKernel'] Operation: mul
+        Reward: 0.0318 ± 0.0002, Length: 3.4117 ± 0.0048, Peak: 0.4756 ± 0.0004
+
+
+11/50  Kernels: ['RBFKernel', 'MaternKernel'] Operation: add
+        Reward: 0.1402 ± 0.0002, Length: 2.8945 ± 0.0014, Peak: 0.6543 ± 0.0004
+
+
+12/50  Kernels: ['RBFKernel', 'MaternKernel'] Operation: mul
+        Reward: 0.1277 ± 0.0002, Length: 2.904 ± 0.0015, Peak: 0.5739 ± 0.0004
+
+
+13/50  Kernels: ['RBFKernel', 'PeriodicKernel'] Operation: add
+        Reward: 0.1294 ± 0.0002, Length: 2.8928 ± 0.0014, Peak: 0.5821 ± 0.0004
+
+
+14/50  Kernels: ['RBFKernel', 'PeriodicKernel'] Operation: mul
+        Reward: 0.1227 ± 0.0002, Length: 2.9089 ± 0.0015, Peak: 0.5705 ± 0.0004
+
+
+15/50  Kernels: ['RBFKernel', 'RQKernel'] Operation: add
+        Reward: 0.1371 ± 0.0002, Length: 2.8875 ± 0.0014, Peak: 0.6095 ± 0.0004
+
+
+16/50  Kernels: ['RBFKernel', 'RQKernel'] Operation: mul
+        Reward: 0.1275 ± 0.0002, Length: 2.9027 ± 0.0014, Peak: 0.5773 ± 0.0004
+
+
+17/50  Kernels: ['RBFKernel', 'LinearKernel'] Operation: add
+        Reward: 0.1147 ± 0.0002, Length: 2.9641 ± 0.0018, Peak: 0.596 ± 0.0004
+
+
+18/50  Kernels: ['RBFKernel', 'LinearKernel'] Operation: mul
+        Reward: 0.054 ± 0.0002, Length: 3.0443 ± 0.0019, Peak: 0.4897 ± 0.0004
+
+
+19/50  Kernels: ['MaternKernel', 'PeriodicKernel'] Operation: add
+        Reward: 0.1238 ± 0.0002, Length: 2.9015 ± 0.0014, Peak: 0.5931 ± 0.0004
+
+
+20/50  Kernels: ['MaternKernel', 'PeriodicKernel'] Operation: mul
+        Reward: 0.1179 ± 0.0002, Length: 2.9131 ± 0.0015, Peak: 0.5471 ± 0.0004
+
+
+21/50  Kernels: ['MaternKernel', 'RQKernel'] Operation: add
+        Reward: 0.1261 ± 0.0002, Length: 2.8895 ± 0.0014, Peak: 0.5759 ± 0.0004
+
+
+22/50  Kernels: ['MaternKernel', 'RQKernel'] Operation: mul
+        Reward: 0.1208 ± 0.0002, Length: 2.9034 ± 0.0015, Peak: 0.5622 ± 0.0004
+
+
+23/50  Kernels: ['MaternKernel', 'LinearKernel'] Operation: add
+        Reward: 0.1168 ± 0.0002, Length: 2.9563 ± 0.0018, Peak: 0.5987 ± 0.0004
+
+
+24/50  Kernels: ['MaternKernel', 'LinearKernel'] Operation: mul
+        Reward: 0.0514 ± 0.0002, Length: 2.9265 ± 0.002, Peak: 0.4599 ± 0.0004
+
+
+25/50  Kernels: ['PeriodicKernel', 'RQKernel'] Operation: add
+        Reward: 0.1157 ± 0.0002, Length: 2.9013 ± 0.0014, Peak: 0.5242 ± 0.0004
+
+
+26/50  Kernels: ['PeriodicKernel', 'RQKernel'] Operation: mul
+        Reward: 0.1346 ± 0.0002, Length: 2.9015 ± 0.0014, Peak: 0.5802 ± 0.0004
+
+
+27/50  Kernels: ['PeriodicKernel', 'LinearKernel'] Operation: add
+        Reward: 0.1151 ± 0.0002, Length: 2.9356 ± 0.0018, Peak: 0.5781 ± 0.0004
+
+
+28/50  Kernels: ['PeriodicKernel', 'LinearKernel'] Operation: mul
+Unstable kernel
+
+29/50  Kernels: ['RQKernel', 'LinearKernel'] Operation: add
+        Reward: 0.1112 ± 0.0002, Length: 2.9367 ± 0.0017, Peak: 0.5395 ± 0.0004
+
+
+30/50  Kernels: ['RQKernel', 'LinearKernel'] Operation: mul
+        Reward: 0.0568 ± 0.0002, Length: 2.873 ± 0.0019, Peak: 0.5203 ± 0.0004
+
+
+31/50  Kernels: ['RBFKernel', 'MaternKernel', 'PeriodicKernel'] Operation: add
+        Reward: 0.1184 ± 0.0002, Length: 2.8996 ± 0.0014, Peak: 0.5231 ± 0.0004
+
+
+32/50  Kernels: ['RBFKernel', 'MaternKernel', 'PeriodicKernel'] Operation: mul
+        Reward: 0.1268 ± 0.0002, Length: 2.9059 ± 0.0015, Peak: 0.5643 ± 0.0004
+
+
+33/50  Kernels: ['RBFKernel', 'MaternKernel', 'RQKernel'] Operation: add
+        Reward: 0.1346 ± 0.0002, Length: 2.8923 ± 0.0014, Peak: 0.6045 ± 0.0004
+
+
+34/50  Kernels: ['RBFKernel', 'MaternKernel', 'RQKernel'] Operation: mul
+        Reward: 0.1266 ± 0.0002, Length: 2.9021 ± 0.0015, Peak: 0.5695 ± 0.0004
+
+
+35/50  Kernels: ['RBFKernel', 'MaternKernel', 'LinearKernel'] Operation: add
+        Reward: 0.1276 ± 0.0002, Length: 2.9413 ± 0.0017, Peak: 0.561 ± 0.0004
+
+
+36/50  Kernels: ['RBFKernel', 'MaternKernel', 'LinearKernel'] Operation: mul
+        Reward: 0.062 ± 0.0002, Length: 3.0852 ± 0.002, Peak: 0.508 ± 0.0004
+
+
+37/50  Kernels: ['RBFKernel', 'PeriodicKernel', 'RQKernel'] Operation: add
+        Reward: 0.1254 ± 0.0002, Length: 2.8925 ± 0.0014, Peak: 0.6072 ± 0.0004
+
+
+38/50  Kernels: ['RBFKernel', 'PeriodicKernel', 'RQKernel'] Operation: mul
+        Reward: 0.1333 ± 0.0002, Length: 2.9044 ± 0.0014, Peak: 0.5804 ± 0.0004
+
+
+39/50  Kernels: ['RBFKernel', 'PeriodicKernel', 'LinearKernel'] Operation: add
+        Reward: 0.1254 ± 0.0002, Length: 2.9243 ± 0.0016, Peak: 0.561 ± 0.0004
+
+
+40/50  Kernels: ['RBFKernel', 'PeriodicKernel', 'LinearKernel'] Operation: mul
+        Reward: 0.0715 ± 0.0002, Length: 2.9484 ± 0.0019, Peak: 0.5387 ± 0.0004
+
+
+41/50  Kernels: ['RBFKernel', 'RQKernel', 'LinearKernel'] Operation: add
+        Reward: 0.1213 ± 0.0002, Length: 2.944 ± 0.0017, Peak: 0.5511 ± 0.0004
+
+
+42/50  Kernels: ['RBFKernel', 'RQKernel', 'LinearKernel'] Operation: mul
+        Reward: 0.0541 ± 0.0002, Length: 2.9975 ± 0.002, Peak: 0.4858 ± 0.0004
+
+
+43/50  Kernels: ['MaternKernel', 'PeriodicKernel', 'RQKernel'] Operation: add
+        Reward: 0.136 ± 0.0002, Length: 2.874 ± 0.0014, Peak: 0.6274 ± 0.0004
+
+
+44/50  Kernels: ['MaternKernel', 'PeriodicKernel', 'RQKernel'] Operation: mul
+        Reward: 0.1329 ± 0.0002, Length: 2.9001 ± 0.0014, Peak: 0.6065 ± 0.0004
+
+
+45/50  Kernels: ['MaternKernel', 'PeriodicKernel', 'LinearKernel'] Operation: add
+        Reward: 0.1186 ± 0.0002, Length: 2.9314 ± 0.0016, Peak: 0.5203 ± 0.0004
+
+
+46/50  Kernels: ['MaternKernel', 'PeriodicKernel', 'LinearKernel'] Operation: mul
+        Reward: 0.0631 ± 0.0002, Length: 2.9226 ± 0.0019, Peak: 0.4797 ± 0.0004
+
+
+47/50  Kernels: ['MaternKernel', 'RQKernel', 'LinearKernel'] Operation: add
+Unstable kernel
+
+48/50  Kernels: ['MaternKernel', 'RQKernel', 'LinearKernel'] Operation: mul
+        Reward: 0.058 ± 0.0002, Length: 2.9035 ± 0.0019, Peak: 0.5137 ± 0.0004
+
+
+49/50  Kernels: ['PeriodicKernel', 'RQKernel', 'LinearKernel'] Operation: add
+        Reward: 0.1136 ± 0.0002, Length: 2.9469 ± 0.0017, Peak: 0.5583 ± 0.0004
+
+
+50/50  Kernels: ['PeriodicKernel', 'RQKernel', 'LinearKernel'] Operation: mul
+        Reward: 0.0694 ± 0.0002, Length: 2.9815 ± 0.0019, Peak: 0.5306 ± 0.0004
+
+
+
+All Combinations (sorted by peak):
+Operation: add, Kernels: ['RBFKernel', 'MaternKernel']
+        Reward: 0.1402       Length: 2.8945     Peak: 0.6543
+
+Operation: add, Kernels: ['MaternKernel', 'PeriodicKernel', 'RQKernel']
+        Reward: 0.136       Length: 2.874     Peak: 0.6274
+
+Operation: add, Kernels: ['RBFKernel', 'RQKernel']
+        Reward: 0.1371       Length: 2.8875     Peak: 0.6095
+
+Operation: mul, Kernels: ['RBFKernel']
+        Reward: 0.128       Length: 2.9044     Peak: 0.6088
+
+Operation: add, Kernels: ['RBFKernel', 'PeriodicKernel', 'RQKernel']
+        Reward: 0.1254       Length: 2.8925     Peak: 0.6072
+
+Operation: mul, Kernels: ['MaternKernel', 'PeriodicKernel', 'RQKernel']
+        Reward: 0.1329       Length: 2.9001     Peak: 0.6065
+
+Operation: add, Kernels: ['RBFKernel', 'MaternKernel', 'RQKernel']
+        Reward: 0.1346       Length: 2.8923     Peak: 0.6045
+
+Operation: add, Kernels: ['MaternKernel', 'LinearKernel']
+        Reward: 0.1168       Length: 2.9563     Peak: 0.5987
+
+Operation: add, Kernels: ['RBFKernel', 'LinearKernel']
+        Reward: 0.1147       Length: 2.9641     Peak: 0.596
+
+Operation: add, Kernels: ['MaternKernel', 'PeriodicKernel']
+        Reward: 0.1238       Length: 2.9015     Peak: 0.5931
+
+Operation: add, Kernels: ['RBFKernel', 'PeriodicKernel']
+        Reward: 0.1294       Length: 2.8928     Peak: 0.5821
+
+Operation: mul, Kernels: ['RBFKernel', 'PeriodicKernel', 'RQKernel']
+        Reward: 0.1333       Length: 2.9044     Peak: 0.5804
+
+Operation: mul, Kernels: ['PeriodicKernel', 'RQKernel']
+        Reward: 0.1346       Length: 2.9015     Peak: 0.5802
+
+Operation: add, Kernels: ['PeriodicKernel', 'LinearKernel']
+        Reward: 0.1151       Length: 2.9356     Peak: 0.5781
+
+Operation: mul, Kernels: ['RBFKernel', 'RQKernel']
+        Reward: 0.1275       Length: 2.9027     Peak: 0.5773
+
+Operation: add, Kernels: ['MaternKernel', 'RQKernel']
+        Reward: 0.1261       Length: 2.8895     Peak: 0.5759
+
+Operation: mul, Kernels: ['RBFKernel', 'MaternKernel']
+        Reward: 0.1277       Length: 2.904     Peak: 0.5739
+
+Operation: mul, Kernels: ['MaternKernel']
+        Reward: 0.1258       Length: 2.8948     Peak: 0.5734
+
+Operation: mul, Kernels: ['RBFKernel', 'PeriodicKernel']
+        Reward: 0.1227       Length: 2.9089     Peak: 0.5705
+
+Operation: mul, Kernels: ['RBFKernel', 'MaternKernel', 'RQKernel']
+        Reward: 0.1266       Length: 2.9021     Peak: 0.5695
+
+Operation: mul, Kernels: ['RBFKernel', 'MaternKernel', 'PeriodicKernel']
+        Reward: 0.1268       Length: 2.9059     Peak: 0.5643
+
+Operation: mul, Kernels: ['MaternKernel', 'RQKernel']
+        Reward: 0.1208       Length: 2.9034     Peak: 0.5622
+
+Operation: add, Kernels: ['RBFKernel', 'PeriodicKernel', 'LinearKernel']
+        Reward: 0.1254       Length: 2.9243     Peak: 0.561
+
+Operation: add, Kernels: ['RBFKernel']
+        Reward: 0.125       Length: 2.9087     Peak: 0.561
+
+Operation: add, Kernels: ['RBFKernel', 'MaternKernel', 'LinearKernel']
+        Reward: 0.1276       Length: 2.9413     Peak: 0.561
+
+Operation: add, Kernels: ['PeriodicKernel']
+        Reward: 0.1111       Length: 2.8963     Peak: 0.5607
+
+Operation: add, Kernels: ['PeriodicKernel', 'RQKernel', 'LinearKernel']
+        Reward: 0.1136       Length: 2.9469     Peak: 0.5583
+
+Operation: add, Kernels: ['RBFKernel', 'RQKernel', 'LinearKernel']
+        Reward: 0.1213       Length: 2.944     Peak: 0.5511
+
+Operation: mul, Kernels: ['MaternKernel', 'PeriodicKernel']
+        Reward: 0.1179       Length: 2.9131     Peak: 0.5471
+
+Operation: add, Kernels: ['RQKernel']
+        Reward: 0.1145       Length: 2.904     Peak: 0.5466
+
+Operation: add, Kernels: ['RQKernel', 'LinearKernel']
+        Reward: 0.1112       Length: 2.9367     Peak: 0.5395
+
+Operation: mul, Kernels: ['RBFKernel', 'PeriodicKernel', 'LinearKernel']
+        Reward: 0.0715       Length: 2.9484     Peak: 0.5387
+
+Operation: mul, Kernels: ['PeriodicKernel', 'RQKernel', 'LinearKernel']
+        Reward: 0.0694       Length: 2.9815     Peak: 0.5306
+
+Operation: add, Kernels: ['MaternKernel']
+        Reward: 0.1091       Length: 2.9095     Peak: 0.5248
+
+Operation: add, Kernels: ['PeriodicKernel', 'RQKernel']
+        Reward: 0.1157       Length: 2.9013     Peak: 0.5242
+
+Operation: add, Kernels: ['RBFKernel', 'MaternKernel', 'PeriodicKernel']
+        Reward: 0.1184       Length: 2.8996     Peak: 0.5231
+
+Operation: mul, Kernels: ['RQKernel', 'LinearKernel']
+        Reward: 0.0568       Length: 2.873     Peak: 0.5203
+
+Operation: add, Kernels: ['MaternKernel', 'PeriodicKernel', 'LinearKernel']
+        Reward: 0.1186       Length: 2.9314     Peak: 0.5203
+
+Operation: mul, Kernels: ['RQKernel']
+        Reward: 0.1107       Length: 2.9052     Peak: 0.5184
+
+Operation: mul, Kernels: ['MaternKernel', 'RQKernel', 'LinearKernel']
+        Reward: 0.058       Length: 2.9035     Peak: 0.5137
+
+Operation: add, Kernels: ['LinearKernel']
+        Reward: 0.0363       Length: 3.5103     Peak: 0.5126
+
+Operation: mul, Kernels: ['RBFKernel', 'MaternKernel', 'LinearKernel']
+        Reward: 0.062       Length: 3.0852     Peak: 0.508
+
+Operation: mul, Kernels: ['RBFKernel', 'LinearKernel']
+        Reward: 0.054       Length: 3.0443     Peak: 0.4897
+
+Operation: mul, Kernels: ['RBFKernel', 'RQKernel', 'LinearKernel']
+        Reward: 0.0541       Length: 2.9975     Peak: 0.4858
+
+Operation: mul, Kernels: ['MaternKernel', 'PeriodicKernel', 'LinearKernel']
+        Reward: 0.0631       Length: 2.9226     Peak: 0.4797
+
+Operation: mul, Kernels: ['LinearKernel']
+        Reward: 0.0318       Length: 3.4117     Peak: 0.4756
+
+Operation: mul, Kernels: ['MaternKernel', 'LinearKernel']
+        Reward: 0.0514       Length: 2.9265     Peak: 0.4599
+
+
+Average peak per kernel type:
+Kernel: RBFKernel, Average Peak: 0.5672
+Kernel: MaternKernel, Average Peak: 0.5591
+Kernel: PeriodicKernel, Average Peak: 0.5617
+Kernel: RQKernel, Average Peak: 0.5614
+Kernel: LinearKernel, Average Peak: 0.5289
+
+Average peak per operation:
+Operation: add, Average Peak: 0.5696
+Operation: mul, Average Peak: 0.5406

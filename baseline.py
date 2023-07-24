@@ -1,10 +1,10 @@
 from baselines.baseline_random import run as run_random
-from baselines.baseline_sklearn import run as run_sklearn
 from baselines.baseline_gpy import run as run_gpy
+from agent_performance import baseline as agent_baseline
 import warnings
 from tqdm import tqdm
 import numpy as np
-from utils import load_config
+from utils import load_config, pretty_print_results
 warnings.filterwarnings("ignore")
 
 def baseline_sklearn(training, run, n, dims = 2, batch_size = 512):
@@ -21,15 +21,7 @@ def baseline_sklearn(training, run, n, dims = 2, batch_size = 512):
         lengths.append(l.cpu().numpy())
         peaks.append(p.cpu().numpy())
         
-    reward_avg = round(sum(rewards)/n, 4)
-    length_avg = round(sum(lengths)/n, 4)
-    peak_avg = round(sum(peaks)/n, 4)
-
-    reward_std = round(np.std(rewards)/np.sqrt(n), 4)
-    length_std = round(np.std(lengths)/np.sqrt(n), 4)
-    peak_std = round(np.std(peaks)/np.sqrt(n), 4)
-    
-    print(f"Reward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}")
+    pretty_print_results(rewards, lengths, peaks)
 
 def baseline(training, run, n, dims = 2, batch_size = 512):
     config = load_config("configs\\training_config.yml" if training else "configs\\testing_config.yml")
@@ -37,31 +29,28 @@ def baseline(training, run, n, dims = 2, batch_size = 512):
     config.dims = dims
     config.verbose = 0
     rewards, lengths, peaks = run(n, config)
-    n = len(peaks)
-    reward_avg = round(sum(rewards)/n, 4)
-    length_avg = round(sum(lengths)/n, 4)
-    peak_avg = round(sum(peaks)/n, 4)
-
-    reward_std = round(np.std(rewards)/np.sqrt(n), 4)
-    length_std = round(np.std(lengths)/np.sqrt(n), 4)
-    peak_std = round(np.std(peaks)/np.sqrt(n), 4)
-    
-    print(f"\t\tReward: {reward_avg} ± {reward_std}, Length: {length_avg} ± {length_std}, Peak: {peak_avg} ± {peak_std}")
+    pretty_print_results(rewards, lengths, peaks)
 
 
 n = 100000
 dims = 2
+batch_size = 2048
+time_model = "models\\Goldstein-Price.t"
+no_time_model = time_model[:-2] + " no time.t"
+
 print("Baselining training env\n")
 
 #WITH TIME:
 print(f"\tBaseline random with n = {n}:")
-baseline(True, run_random, n, dims)
+baseline(True, run_random, n, dims, batch_size=batch_size)
 print(f"\n\tBaseline gpy with n = {n}:")
-baseline(True, run_gpy, n, dims)
-#print(f"\nBaseline sklearn with n = {n}:")
-#baseline_sklearn(True, run_sklearn, n, dims)
+baseline(True, run_gpy, n, dims, batch_size=batch_size)
+print(f"\n\tTime agent with n = {n}:")
+agent_baseline(True, n, time_model, True, dims, batch_size=512)
+print(f"\n\tNo time agent with n = {n}:")
+agent_baseline(True, n, no_time_model, False, dims, batch_size=512)
 
-
+exit()
 print("\n\nBaselining test env\n")
 
 #WITH TIME:

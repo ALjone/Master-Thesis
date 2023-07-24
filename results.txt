@@ -1,0 +1,19 @@
+Branin-Honn:
+    Baselining training env
+
+        Baseline random with n = 100000:
+                Reward: 2.113816 ± 0.003418, Length: 6.454679 ± 0.009559, Peak: 0.979286 ± 7.9e-05
+                Log-transformed simple regret: 1.683736, Simple regret: 0.020714
+
+        Baseline gpy with n = 100000:
+                Reward: 2.990389 ± 0.010302, Length: 9.757038 ± 0.017563, Peak: 0.987214 ± 7.3e-05
+                Log-transformed simple regret: 1.893265, Simple regret: 0.012786
+
+        Time agent with n = 100000:
+                Reward: 2.908781 ± 0.009394, Length: 9.247268 ± 0.012924, Peak: 0.988335 ± 5.9e-05
+                Log-transformed simple regret: 1.933115, Simple regret: 0.011665
+
+        No time agent with n = 100000:
+                Reward: 3.01523 ± 0.010016, Length: 7.304013 ± 0.011129, Peak: 0.988371 ± 5.9e-05
+                Log-transformed simple regret: 1.934458, Simple regret: 0.011629
+

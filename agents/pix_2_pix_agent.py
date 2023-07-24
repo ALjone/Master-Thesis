@@ -86,7 +86,7 @@ class Agent(nn.Module):
         #Make shared part
         blocks.append(conv(observation_space.shape[1]+1, 32, kernel_size=5, padding = 2))
         blocks.append(nn.LeakyReLU())
-        for _ in range(10-2):
+        for _ in range(15):
             blocks.append(layer(32, 32, kernel_size=5))
             if use_batch_norm:
                 blocks.append(bn(32))
@@ -97,38 +97,15 @@ class Agent(nn.Module):
 
         self.unit_output = conv(32, 1, 1)
         
-        self.critic_output = nn.Sequential(nn.Linear(32, 64),
+        self.critic_output = nn.Sequential(nn.Linear(8, 64),
                                            nn.LeakyReLU(),
                                            nn.Linear(64, 32),
                                            nn.LeakyReLU(),
                                            nn.Linear(32, 1))
         
         self.positional_weighting = nn.Parameter(torch.ones(observation_space.shape[2:]).unsqueeze(0))
-        self.temperature = nn.Parameter(torch.ones(1)) #NOTE: Actually just a scaling factor on the output logits
 
         print("Running with", self.count_parameters(), "parameters")
-
-    def get_normalized_probs(self, logits, prob_threshold):
-        # Compute softmax probabilities from logits
-        probs = F.softmax(logits, dim=-1)
-
-        # Sort the probabilities along the category dimension
-        sorted_probs, _ = torch.sort(probs, dim=-1)
-
-        # Determine the threshold probability corresponding to the 75th percentile
-        threshold_index = int(prob_threshold * sorted_probs.size(-1))
-        threshold_prob = sorted_probs[..., threshold_index]
-
-        # Create a mask based on the threshold probability
-        mask = probs < threshold_prob.unsqueeze(-1)
-
-        # Set masked probabilities to zero
-        masked_probs = torch.where(mask, torch.zeros_like(probs), probs)
-
-        # Normalize the masked probabilities
-        normalized_probs = masked_probs / masked_probs.sum(dim=-1, keepdim=True)
-
-        return normalized_probs
 
 
     def forward(self, observations: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
@@ -144,7 +121,7 @@ class Agent(nn.Module):
         x = torch.cat((observations, global_features), dim = 1)
         x = self.conv(x)
 
-        action = (self.unit_output(x)*self.positional_weighting)/self.temperature
+        action = (torch.nn.functional.relu(self.unit_output(x))*self.positional_weighting)
 
 
         critic = self.critic_output(nn.AvgPool2d(x.shape[-2])(x).flatten(1))

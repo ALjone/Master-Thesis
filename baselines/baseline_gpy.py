@@ -1,8 +1,8 @@
 from tqdm import tqdm
 import torch
-from env.batched_env import BlackBox
-
-def run(n, config, learning_rate = None, training_iters = None, approximate = None, noise = None):
+#from env.batched_env import BlackBox
+from env.batched_env_pointwise import BlackBox
+def run(n, config, learning_rate = None, training_iters = None, approximate = None, noise = None, kernel = None):
     """use_all: Whether to use all training points (the full 50, which includes duplicates) or just without duplicates"""
     #NOTE: Shady?
     if learning_rate is not None:
@@ -13,6 +13,8 @@ def run(n, config, learning_rate = None, training_iters = None, approximate = No
         config.approximate = approximate
     if noise is not None:
         config.noise = noise
+    if kernel is not None:
+        config.kernels = [kernel]
     env = BlackBox(config=config)
     env.reset()
 

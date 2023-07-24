@@ -1,4 +1,5 @@
-from env.batched_env import BlackBox
+#from env.batched_env import BlackBox
+from env.batched_env_pointwise import BlackBox
 from tqdm import tqdm
 import torch
 

@@ -1,4 +1,5 @@
-from env.batched_env import BlackBox
+#from env.batched_env import BlackBox
+from env.batched_env_pointwise import BlackBox
 from sklearn_GP import GP as sklearnGP
 from sklearn.gaussian_process.kernels import RBF, Matern
 import torch

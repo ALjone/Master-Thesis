@@ -220,7 +220,7 @@ class BlackBox():
         #Normalize all self.values_for_gp. But should be fixed by just choosing a reasonable distribution to sample from
         if idx is None: idx = self.idx
 
-        mean, std, EI, _ = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
+        mean, std, EI, UCB = self.GP.get_mean_std(self.pad_sublists(self.actions_for_gp, idx), self.pad_sublists(self.values_for_gp, idx), idx)
         self.grid[idx, 0] = mean
         self.grid[idx, 1] = std
         self.grid[idx, 2] = EI

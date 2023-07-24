@@ -1,7 +1,7 @@
 import yaml
 import torch
 from gpytorch.kernels import RBFKernel, MaternKernel
-
+import numpy as np
 #Thanks to GPT-4
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -56,14 +56,28 @@ def load_config(path: str, change_dict = {}):
             config[key] = None
     
     kernels = []
-    for kernel in config["kernels"]:
+    for kernel in config["kernel_classes"]:
         assert kernel.lower() in ["rbf", "matern"], "Only RBF and Matern support atm"
         if kernel.lower() == "rbf":
             kernels.append(RBFKernel)
         elif kernel.lower() == "matern":
             kernels.append(MaternKernel)
 
-    config["kernels"] = kernels
+    config["kernel_classes"] = kernels
     config = AttrDict(config)
 
     return config
+
+
+def pretty_print_results(rewards, lengths, peaks, round_precision = 6):
+    n = len(peaks)
+    reward_avg = round(sum(rewards)/n, round_precision)
+    length_avg = round(sum(lengths)/n, round_precision)
+    peak_avg = round(sum(peaks)/n, round_precision)
+
+    reward_error = round(np.std(rewards)/np.sqrt(n), round_precision)
+    length_error = round(np.std(lengths)/np.sqrt(n), round_precision)
+    peak_error = round(np.std(peaks)/np.sqrt(n), round_precision)
+    
+    print(f"\t\tReward: {reward_avg} ± {reward_error}, Length: {length_avg} ± {length_error}, Peak: {peak_avg} ± {peak_error}")
+    print(f"\t\tLog-transformed simple regret: {round(-np.log10(1-peak_avg), round_precision)}, Simple regret: {round(1-peak_avg, round_precision)}")

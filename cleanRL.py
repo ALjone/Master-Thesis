@@ -2,6 +2,7 @@
 import time
 from env.batched_env import BlackBox
 from agents.pix_2_pix_agent import Agent as pix_agent
+from agents.ei_argmax_weighting import Agent as positional_only_agent
 
 import gym
 import numpy as np
@@ -23,7 +24,7 @@ def get_config():
 
 if __name__ == "__main__":
     config = get_config()
-    run_name = "With positional encoding, temperature, mixed func"
+    run_name = "Only positional encoding" #"With positional encoding, temperature, convex, relu, high res"
 
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     env: BlackBox = BlackBox(config)
 
     #agent = torch.load("Pretrained_tanh_agent.t") if args.pretrained else tanh_Agent(env.observation_space, args.dims).to(device)
-    agent = pix_agent(env.observation_space, config.dims).to(device)
+    agent = positional_only_agent(env.observation_space, config.dims).to(device) #pix_agent(env.observation_space, config.dims).to(device)
     optimizer = optim.Adam(agent.parameters(), lr=config.learning_rate, eps=1e-5, weight_decay=config.weight_decay)
 
     # ALGO Logic: Storage setup
@@ -89,7 +90,6 @@ if __name__ == "__main__":
 
             if torch.sum(next_done) > 0:
                 mean_returns, mean_peaks, mean_lengths = metrics_per_class(info["episodic_returns"][next_done], info["peak"][next_done], info["episodic_length"][next_done], info["function_classes"][next_done], len(episodic_returns.keys()))
-                #NOTE: DOES NOT WORK!!! INDEXING ISSUES USE CHATGPTS SOLUTION
                 for i, (length_lst, peak_lst, return_lst) in enumerate(zip(episodic_lengths.values(), episodic_peaks.values(), episodic_returns.values())):
                     if i < len(mean_lengths):
                         if mean_lengths[i] is not None:
@@ -190,7 +190,7 @@ if __name__ == "__main__":
         writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
         writer.add_scalar("charts/max_observation", next_img_obs.max(), global_step)
         writer.add_scalar("charts/min_observation", next_img_obs.min(), global_step)
-        writer.add_scalar("charts/temperature", agent.temperature.detach().cpu().numpy().item(), global_step)
+        #writer.add_scalar("charts/temperature", agent.temperature.detach().cpu().numpy().item(), global_step)
         writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
         writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
         writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)
