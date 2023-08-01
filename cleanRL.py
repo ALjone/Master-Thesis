@@ -33,7 +33,7 @@ if __name__ == "__main__":
     )
 
 
-    device = torch.device("cuda")
+    device = torch.device("cpu")
 
     # env setup
     env: BlackBox = BlackBox(config)

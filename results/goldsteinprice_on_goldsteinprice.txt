@@ -1,0 +1,31 @@
+Benchmark random with n = 5000:
+        Reward: 0.969808 ± 0.006337, Length: 17.987083 ± 0.045186, Peak: 0.765193 ± 0.001318
+        Log-transformed simple regret: 0.629289, Simple regret: 0.234807
+
+Benchmark gpy with n = 5000:
+        Reward: 1.043927 ± 0.008878, Length: 19.274235 ± 0.079097, Peak: 0.797661 ± 0.001423
+        Log-transformed simple regret: 0.69392, Simple regret: 0.202339
+
+Benchmark EIpu with n = 5000 sampling:
+        Reward: 0.886833 ± 0.007365, Length: 30.912018 ± 0.249712, Peak: 0.782689 ± 0.001399
+        Log-transformed simple regret: 0.662918, Simple regret: 0.217311
+
+Benchmark CArBO with n = 5000 sampling:
+        Reward: 0.854308 ± 0.006931, Length: 32.481297 ± 0.272444, Peak: 0.778812 ± 0.001388
+        Log-transformed simple regret: 0.655238, Simple regret: 0.221188
+
+Time agent with n = 5000 using argmax:
+        Reward: 1.122986 ± 0.01153, Length: 28.622506 ± 0.147985, Peak: 0.792344 ± 0.00204
+        Log-transformed simple regret: 0.682656, Simple regret: 0.207656
+
+No time agent with n = 5000 using argmax:
+        Reward: 1.017792 ± 0.011458, Length: 19.219279 ± 0.089773, Peak: 0.783414 ± 0.001955
+        Log-transformed simple regret: 0.66437, Simple regret: 0.216586
+
+Time agent with n = 5000 sampling:
+        Reward: 1.786239 ± 0.016996, Length: 21.901597 ± 0.05296, Peak: 0.9153 ± 0.001025
+        Log-transformed simple regret: 1.072117, Simple regret: 0.0847
+
+No time agent with n = 5000 sampling:
+        Reward: 1.693535 ± 0.017491, Length: 20.723455 ± 0.066639, Peak: 0.89647 ± 0.001347
+        Log-transformed simple regret: 0.984934, Simple regret: 0.10353

@@ -30,8 +30,8 @@ class RandomGP:
         X, Y = np.meshgrid(x, x)
         X = np.repeat(X[None, :, :], self.batch_size, axis=0)
         Y = np.repeat(Y[None, :, :], self.batch_size, axis=0)
-        self.x = X #torch.tensor(X).to(torch.device("cuda"))
-        self.y = Y #torch.tensor(Y).to(torch.device("cuda"))
+        self.x = X #torch.tensor(X).to(torch.device("cpu"))
+        self.y = Y #torch.tensor(Y).to(torch.device("cpu"))
 
         self.theta_mu = None
         self.theta_var = None

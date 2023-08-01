@@ -2,24 +2,19 @@ import numpy as np
 from gpytorch.variational import CholeskyVariationalDistribution
 from gpytorch.variational import VariationalStrategy
 import gpytorch
-from gpytorch.kernels import RBFKernel, MaternKernel#, CosineKernel, PolynomialKernel, LinearKernel
 import torch
 from matplotlib import pyplot as plt
 from scipy.stats import norm
 
 class ExactGPModel(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood, batch_size, kernel_classes, operation):
+    def __init__(self, train_x, train_y, likelihood, batch_size, kernel, mixtures = None):
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         #self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([batch_size]))
         self.mean_module = gpytorch.means.ZeroMean(batch_shape=torch.Size([batch_size]))
-        kernel_classes = [kernel() for kernel in kernel_classes]
-        if operation == 'add':
-            combined_kernel = gpytorch.kernels.AdditiveKernel(*kernel_classes)
-        elif operation == "mul":  # operation == 'mul'
-            combined_kernel = gpytorch.kernels.ProductKernel(*kernel_classes)
-        else: 
-            raise ValueError("Expected operation to be add or mul, found:", operation)
-        self.covar_module = gpytorch.kernels.ScaleKernel(combined_kernel, batch_shape=torch.Size([batch_size]))
+        if mixtures is not None:
+            self.covar_module = gpytorch.kernels.ScaleKernel(kernel(ard_num_dims = train_x.shape[-1], batch_shape = torch.Size([batch_size]), num_mixtures = mixtures), batch_shape=torch.Size([batch_size]))
+        else:
+            self.covar_module = gpytorch.kernels.ScaleKernel(kernel(ard_num_dims = train_x.shape[-1], batch_shape = torch.Size([batch_size])), batch_shape=torch.Size([batch_size]))
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -33,7 +28,7 @@ class ApproximateGPModel(gpytorch.models.ApproximateGP):
             self, train_x, variational_distribution, learn_inducing_locations=False
         )
         super(ApproximateGPModel, self).__init__(variational_strategy)
-        self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([batch_size]))
+        self.mean_module = gpytorch.means.ZeroMean(batch_shape=torch.Size([batch_size]))
         if operation == 'add':
             combined_kernel = gpytorch.kernels.AdditiveKernel(*kernels)
         else:  # operation == 'mul'
@@ -51,21 +46,25 @@ class GP:
         self.noise = config.noise
         self.training_iters = config.GP_training_iters
         self.learning_rate = config.GP_learning_rate
-        self.kernel_classes = config.kernel_classes
+        self.kernel = config.kernel
         self.operation = config.operation
         self.verbose = config.verbose
         self.resolution = config.resolution
         self.min_, self.max_ = config.domain[0], config.domain[1]
-        self.device = torch.device("cuda")
+        self.device = torch.device("cpu")
         self.dims = config.dims
         self.batch_size = config.batch_size
         self.approximate = config.approximate
+        self.mixtures = config.mixtures
+        self.kernel_type = config.kernel_name
+        self.length_scales = torch.zeros(self.batch_size)
+        
 
 
-        self.mean = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
-        self.std = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
-        self.EI = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
-        self.UCB = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
+        self.mean = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cpu"))
+        self.std = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cpu"))
+        self.EI = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cpu"))
+        self.UCB = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cpu"))
         self.biggest = torch.zeros((self.batch_size, ))
 
         if self.dims == 2:
@@ -74,7 +73,7 @@ class GP:
             test_xx, test_yy = torch.meshgrid(test_x, test_y, indexing="ij")
             test_xx = test_xx.reshape(-1, 1)
             test_yy = test_yy.reshape(-1, 1)
-            self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
+            self.points = torch.cat([test_xx, test_yy], dim=1).to(torch.device("cpu")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
         elif self.dims == 3:
             test_x = torch.linspace(self.min_, self.max_, self.resolution)
             test_y = torch.linspace(self.min_, self.max_, self.resolution)
@@ -83,7 +82,7 @@ class GP:
             test_xx = test_xx.reshape(-1, 1)
             test_yy = test_yy.reshape(-1, 1)
             test_zz = test_zz.reshape(-1, 1)
-            self.points = torch.cat([test_xx, test_yy, test_zz], dim=1).to(torch.device("cuda")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
+            self.points = torch.cat([test_xx, test_yy, test_zz], dim=1).to(torch.device("cpu")).unsqueeze(0).repeat_interleave(self.batch_size, 0)
         else:
             raise NotImplementedError("Only dims = 2 or dims = 3 is currently implemented because ")
 
@@ -91,9 +90,9 @@ class GP:
         likelihood = gpytorch.likelihoods.GaussianLikelihood(batch_shape=torch.Size([x.shape[0]])).to(self.device)
 
         if self.approximate:
-            model = ApproximateGPModel(x, x.shape[0], self.kernel_classes, self.operation, self.dims, self.device).to(self.device)
+            model = ApproximateGPModel(x, x.shape[0], self.kernel, self.dims, self.device).to(self.device)
         else:
-            model = ExactGPModel(x, y, likelihood, x.shape[0], self.kernel_classes, self.operation).to(self.device)
+            model = ExactGPModel(x, y, likelihood, x.shape[0], self.kernel, self.mixtures if self.kernel_type == "sm" else None).to(self.device)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=self.learning_rate)  # Includes GaussianLikelihood parameters
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
@@ -118,7 +117,7 @@ class GP:
         
         #NOTE: Assumes scaled input
         model, likelihood, _ = self._get_model(x, y)
-
+        #self.length_scales[idx] = model.covar_module.base_kernel.lengthscale
         self.x = x
         self.y = y
 
@@ -152,7 +151,7 @@ class GP:
             e = 0.001 #TODO: Hyperparameter tune e
             Z = (mean - biggest - e) / std
 
-            EI = ((mean - biggest - e) * norm.cdf(Z) + std * norm.pdf(Z)).to(torch.device("cuda")).to(torch.float)
+            EI = ((mean - biggest - e) * norm.cdf(Z) + std * norm.pdf(Z)).to(torch.device("cpu")).to(torch.float)
             if self.dims == 2:
                 min_values = torch.amin(EI, dim=tuple(i for i in range(1, self.dims+1))).unsqueeze(1).unsqueeze(1)
                 max_values = torch.amax(EI, dim=tuple(i for i in range(1, self.dims+1))).unsqueeze(1).unsqueeze(1)
@@ -189,7 +188,7 @@ class GP:
             best_index = np.unravel_index(np.argmax(EI[i], axis=None), EI[i].shape)
             best_indices.append(best_index)
 
-        idx = torch.tensor(best_indices).to(torch.device("cuda")) 
+        idx = torch.tensor(best_indices).to(torch.device("cpu")) 
         return idx if return_idx else ((idx+1)-(self.resolution//2))/(self.resolution//2)
     
     def render(self, show = False):
@@ -220,14 +219,14 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     batch = 2
     gp = GP(None, batch, (0, 1), 30, dims = 2, verbose=1, training_iters=200, approximate=False)
-    x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
-    y = torch.tensor([0, 3.4, 1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
-    #y = torch.rand(3).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
+    x = torch.tensor([[0, 0], [0.5, 0.7], [0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
+    y = torch.tensor([0, 3.4, 1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
+    #y = torch.rand(3).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
 
-    #x = torch.tensor([[0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
-    #y = torch.tensor([1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cuda"))
+    #x = torch.tensor([[0.3, 0.3]]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
+    #y = torch.tensor([1.5]).unsqueeze(0).repeat_interleave(batch, 0).to(torch.device("cpu"))
 
-    idx = torch.arange(batch).to(torch.device("cuda"))
+    idx = torch.arange(batch).to(torch.device("cpu"))
 
     mean, interval = gp.get_mean_std(x, y, idx)
     plt.imshow(mean.cpu()[0])

@@ -17,7 +17,7 @@ def run(n, config):
     while len(peaks) < n:
         act = env.action_space.sample()
         #print("x:", next[0][0].item(), "y:", next[0][1].item())
-        _, _, dones, info = env.step(torch.tensor(act).to(torch.device("cuda")))
+        _, _, dones, info = env.step(torch.tensor(act).to(torch.device("cpu")))
         if torch.sum(dones) > 0:
             rewards += info["episodic_returns"][dones].tolist()
             lengths += info["episodic_length"][dones].tolist()

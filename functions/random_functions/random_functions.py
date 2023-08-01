@@ -1,11 +1,13 @@
 from utils import rand
 import torch
+import matplotlib as mpl
 from functions.random_functions.rosenbrock_functions import RandomRosenbrock
 from functions.random_functions.convex_functions import RandomConvex
 from functions.random_functions.himmelblau_functions import RandomHimmelblau
 from functions.random_functions.branin_function import RandomBranin
 from functions.random_functions.goldsteinprice_function import RandomGoldsteinPrice
 from functions.random_functions.hartmann3_function import RandomGP
+from functions.random_functions.random_multimodal import RandomMultimodal
 import numpy as np 
 import matplotlib.pyplot as plt
 str_to_class = {"rosenbrock": RandomRosenbrock,
@@ -13,6 +15,7 @@ str_to_class = {"rosenbrock": RandomRosenbrock,
                 "himmelblau": RandomHimmelblau, 
                 "branin": RandomBranin,
                 "goldsteinprice": RandomGoldsteinPrice,
+                "multimodal": RandomMultimodal,
                 "gp": RandomGP}
 
 
@@ -29,10 +32,10 @@ class RandomFunction:
         for funcname in config.functions:
             self.function_types.append(str_to_class[funcname.lower()](config))
 
-        self.matrix = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
-        self.max = torch.zeros((self.batch_size)).to(torch.device("cuda"))
-        self.min = torch.zeros((self.batch_size)).to(torch.device("cuda"))
-        self.function_classes = torch.zeros((self.batch_size), dtype=torch.long).to(torch.device("cuda"))
+        self.matrix = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cpu"))
+        self.max = torch.zeros((self.batch_size)).to(torch.device("cpu"))
+        self.min = torch.zeros((self.batch_size)).to(torch.device("cpu"))
+        self.function_classes = torch.zeros((self.batch_size), dtype=torch.long).to(torch.device("cpu"))
 
         self.reset()
 
@@ -52,9 +55,14 @@ class RandomFunction:
 
         scale_num = rand(self.max_value_range[0], self.max_value_range[1], 1)
         dim = tuple(range(1, self.dims+1))
-        matrix -= (torch.amin(matrix, dim = dim))[:, None, None]
-        matrix = matrix/((torch.amax(matrix, dim = dim)*scale_num)[:, None, None])
-
+        if self.dims == 2:
+            matrix -= (torch.amin(matrix, dim = dim))[:, None, None]
+            matrix = matrix/((torch.amax(matrix, dim = dim)*scale_num)[:, None, None])
+        elif self.dims == 3:
+            matrix -= (torch.amin(matrix, dim = dim))[:, None, None, None]
+            matrix = matrix/((torch.amax(matrix, dim = dim)*scale_num)[:, None, None, None])
+        else:
+            raise NotImplementedError("Only supports 2D and 3D so far")
         self.matrix[idx] = matrix
         self.max[idx] = torch.amax(matrix, dim = dim)
         self.min[idx] = torch.amin(matrix, dim = dim)
@@ -65,6 +73,7 @@ class RandomFunction:
         #assert torch.max(self.max) == 1, f"Max shouldn't be bigger than 1, found: {torch.max(self.max)}"
 
     def visualize_two_dims(self):
+        raise NotImplementedError("Call this on the function type itself")
         matrix = self.matrix
         assert self.dims == 2, f"Can only visualize 2 dims, found: {self.dims}"
 
@@ -72,18 +81,20 @@ class RandomFunction:
         for i in range(min(10, self.batch_size)):
             ax = fig.add_subplot(2, 5, i + 1)
             ax.imshow(matrix[i].cpu().numpy(), cmap='viridis')
-            ax.set_title('Angle = {:.2f}'.format(self.params["angles"][i, 0, 0].item()))
+            self.function_classes
+            ax.set_title('Angle = {:.2f}'.format(self.function_classes[0].params["angles"][i, 0, 0].item()))
         plt.tight_layout()
         plt.show() 
 
-    def visualize_single(self):
+    def visualize_single(self, name, dpi = 600):
         matrix = self.matrix
         assert self.dims == 2, f"Can only visualize 2 dims, found: {self.dims}"
+        
 
-        plt.title("Visualization of Goldstein-Price")
+        plt.title(f"Visualization of {name}")
         plt.xlabel("x")
         plt.ylabel("y")
-        plt.imshow(matrix[0].detach().cpu().numpy(), cmap='viridis', extent=[-2, 2, -2, 2], origin='lower')
+        plt.imshow(matrix[0].detach().cpu().numpy(), cmap='viridis', extent=[-1, 1, -1, 1], origin='lower')
         plt.colorbar()
         
         plt.show()

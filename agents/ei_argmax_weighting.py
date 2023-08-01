@@ -110,7 +110,7 @@ class Agent(nn.Module):
         for i in range(len(observations.shape)-1):
             time = time.unsqueeze(1)
 
-        global_features = torch.ones((observations.shape[0], 1) + tuple(observations.shape[-1] for _ in range(len(observations.shape)-2)), device=torch.device("cuda"))*time #Make it fit the observation, with 1 channel, to stack
+        global_features = torch.ones((observations.shape[0], 1) + tuple(observations.shape[-1] for _ in range(len(observations.shape)-2)), device=torch.device("cpu"))*time #Make it fit the observation, with 1 channel, to stack
         if observations.isnan().any():
             print("Found NaN in observation!!!")
             print(observations.isnan().sum().item(), "NaNs founds")

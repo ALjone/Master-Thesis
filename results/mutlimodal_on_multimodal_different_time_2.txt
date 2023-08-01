@@ -1,0 +1,19 @@
+
+
+
+
+Time agent with n = 5000 using argmax:
+        Reward: 2.663053 ± 0.020682, Length: 26.738922 ± 0.075944, Peak: 0.952264 ± 0.001124
+        Log-transformed simple regret: 1.321154, Simple regret: 0.047736
+
+No time agent with n = 5000 using argmax:
+        Reward: 2.057466 ± 0.021605, Length: 25.113826 ± 0.080271, Peak: 0.890041 ± 0.00172
+        Log-transformed simple regret: 0.958769, Simple regret: 0.109959
+
+Time agent with n = 5000 sampling:
+        Reward: 2.866093 ± 0.020309, Length: 24.39738 ± 0.070815, Peak: 0.965761 ± 0.000863
+        Log-transformed simple regret: 1.465479, Simple regret: 0.034239
+
+No time agent with n = 5000 sampling:
+        Reward: 2.453039 ± 0.020106, Length: 23.202559 ± 0.072764, Peak: 0.953776 ± 0.000991
+        Log-transformed simple regret: 1.335132, Simple regret: 0.046224

@@ -13,10 +13,10 @@ import matplotlib as mpl
 config = load_config("configs\\training_config.yml")
 
 env = BlackBox(config)
-agent: Agent = Agent(env.observation_space, env.dims).to(torch.device("cuda"))
+agent: Agent = Agent(env.observation_space, config.layer_size, env.dims).to(torch.device("cpu"))
 #agent.load_state_dict(torch.load("model_with_positional_encoding.t"))
 #agent.load_state_dict(torch.load("models/With positional encoding, temperature, convex, relu, high res.t"))
-agent.load_state_dict(torch.load("models/Pointwise deep convex 40.t"))
+agent.load_state_dict(torch.load("models/multimodal 50 64.t"))
 
 
 R = 0
@@ -34,7 +34,9 @@ func_avg = np.zeros(tuple(config.resolution for _ in range(config.dims)))
 
 for i in tqdm(range(sims)):
     s = env.reset()
-    func_avg += torch.mean(env.func_grid, dim = 0).cpu().numpy()
+    #func_avg += torch.mean(env.func_grid, dim = 0).cpu().numpy()
+    func_avg += torch.mean(env.GP.mean, dim = 0).cpu().numpy()
+    continue
     dones = [False]
     #continue
     while not dones[0]:

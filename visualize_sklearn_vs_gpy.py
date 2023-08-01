@@ -44,8 +44,8 @@ def get_next_x_y(sklearn_gp: sklearn_GP, gpy_gp: gpy_GP, x: torch.tensor, y: tor
     sklearn_gp.update_points(next_point.numpy(), next_value.numpy())
     x[i] = next_point
     y[i] = next_value
-    gpy_gp.get_mean_std(x.to(torch.float32).unsqueeze(0).repeat_interleave(2, 0).to(torch.device("cuda")),
-                        y.to(torch.float32).unsqueeze(0).repeat_interleave(2, 0).to(torch.device("cuda")), torch.arange(start = 0, end = 2).to(torch.device("cuda")))
+    gpy_gp.get_mean_std(x.to(torch.float32).unsqueeze(0).repeat_interleave(2, 0).to(torch.device("cpu")),
+                        y.to(torch.float32).unsqueeze(0).repeat_interleave(2, 0).to(torch.device("cpu")), torch.arange(start = 0, end = 2).to(torch.device("cpu")))
 
     return x, y
     
@@ -65,8 +65,8 @@ def run():
     x[1] = torch.tensor(_x[1])
     y[1] = torch.tensor(_y[1])
 
-    gpy_gp.get_mean_std(x.to(torch.float32).unsqueeze(0).repeat_interleave(2, 0).to(torch.device("cuda")),
-                        y.to(torch.float32).unsqueeze(0).repeat_interleave(2, 0).to(torch.device("cuda")), torch.arange(start = 0, end = 2).to(torch.device("cuda")))
+    gpy_gp.get_mean_std(x.to(torch.float32).unsqueeze(0).repeat_interleave(2, 0).to(torch.device("cpu")),
+                        y.to(torch.float32).unsqueeze(0).repeat_interleave(2, 0).to(torch.device("cpu")), torch.arange(start = 0, end = 2).to(torch.device("cpu")))
 
     sklearn_imgs = []
     sklearn_gp.get_next_point()

@@ -1,0 +1,33 @@
+Baselining training env on saved_configs\goldsteinprice_on_multimodel_2d.yml
+
+        Benchmark random with n = 10000:
+                Reward: 1.216615 ± 0.005719, Length: 17.823944 ± 0.033987, Peak: 0.840151 ± 0.001157
+                Log-transformed simple regret: 0.79629, Simple regret: 0.159849
+
+        Benchmark gpy with n = 10000:
+                Reward: 2.23172 ± 0.012668, Length: 19.022849 ± 0.047379, Peak: 0.934889 ± 0.000895
+                Log-transformed simple regret: 1.186346, Simple regret: 0.065111
+
+        Benchmark EIpu with n = 10000 sampling:
+                Reward: 2.373237 ± 0.013666, Length: 22.227513 ± 0.056905, Peak: 0.943172 ± 0.000815
+                Log-transformed simple regret: 1.245438, Simple regret: 0.056828
+
+        Benchmark CArBO with n = 10000 sampling:
+                Reward: 2.366349 ± 0.014131, Length: 20.557432 ± 0.051485, Peak: 0.941586 ± 0.000842
+                Log-transformed simple regret: 1.233483, Simple regret: 0.058414
+
+        Time agent with n = 10000 using argmax:
+                Reward: 1.115681 ± 0.007937, Length: 24.627054 ± 0.116174, Peak: 0.740901 ± 0.0022
+                Log-transformed simple regret: 0.586534, Simple regret: 0.259099
+
+        No time agent with n = 10000 using argmax:
+                Reward: 0.985051 ± 0.007866, Length: 20.179444 ± 0.081281, Peak: 0.714062 ± 0.002164
+                Log-transformed simple regret: 0.543728, Simple regret: 0.285938
+
+        Time agent with n = 10000 sampling:
+                Reward: 2.09005 ± 0.014675, Length: 23.015463 ± 0.07756, Peak: 0.903866 ± 0.001143
+                Log-transformed simple regret: 1.017123, Simple regret: 0.096134
+
+        No time agent with n = 10000 sampling:
+                Reward: 2.018983 ± 0.014688, Length: 19.826841 ± 0.07525, Peak: 0.895617 ± 0.001203
+                Log-transformed simple regret: 0.98137, Simple regret: 0.104383

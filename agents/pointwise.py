@@ -17,7 +17,16 @@ class Agent(nn.Module):
         super().__init__()
         self.dims = dims
         self.n_features = observation_space.shape[1]
+        self.temperature = nn.Parameter(torch.tensor(3.0))
         self.actor = nn.Sequential( nn.Linear(self.n_features, layer_size),
+                                    nn.LeakyReLU(),
+                                    nn.Linear(layer_size, layer_size),
+                                    nn.LeakyReLU(),
+                                    nn.Linear(layer_size, layer_size),
+                                    nn.LeakyReLU(),
+                                    nn.Linear(layer_size, layer_size),
+                                    nn.LeakyReLU(),
+                                    nn.Linear(layer_size, layer_size),
                                     nn.LeakyReLU(),
                                     nn.Linear(layer_size, layer_size),
                                     nn.LeakyReLU(),
@@ -29,6 +38,14 @@ class Agent(nn.Module):
                                     nn.LeakyReLU())
         
         self.critic = nn.Sequential( nn.Linear(2, layer_size),
+                                    nn.LeakyReLU(),
+                                    nn.Linear(layer_size, layer_size),
+                                    nn.LeakyReLU(),
+                                    nn.Linear(layer_size, layer_size),
+                                    nn.LeakyReLU(),
+                                    nn.Linear(layer_size, layer_size),
+                                    nn.LeakyReLU(),
+                                    nn.Linear(layer_size, layer_size),
                                     nn.LeakyReLU(),
                                     nn.Linear(layer_size, layer_size),
                                     nn.LeakyReLU(),
@@ -95,9 +112,9 @@ class Agent(nn.Module):
         return value
 
     def get_action_and_value(self, img, action=None, testing = False):
-        actor_logits, critic_output = self(img)
+        logits, critic_output = self(img)
 
-        logits = actor_logits
+        logits = logits/self.temperature
         categorical = Categorical(logits = logits.flatten(1))
         if action is None:
             if not testing:
@@ -128,9 +145,7 @@ class Agent(nn.Module):
     def get_2d_logits_and_prob(self, img):
         with torch.no_grad():
             logits, _ = self(img)
-        print(logits.shape)
         flatten_logits = logits.flatten(1)
-        print(flatten_logits.shape)
         flattened_probs = torch.nn.Softmax(dim=1)(flatten_logits)
         probs = flattened_probs.reshape(logits.shape)
 

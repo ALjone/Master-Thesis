@@ -1,0 +1,67 @@
+#Common
+resolution: 100 #Change noise correlation!!!
+domain: [-1, 1]
+batch_size: 256
+dims: 2
+time_dims: 2
+verbose: 1 #1 for one time, general stuff, 2 for in depth
+pre_trained_path: multimodal temperature.t
+use_pretrained: False
+layer_size: 32
+use_time: True
+
+#Batched env
+num_init_points: 3
+T_range: [500, 800]
+expand_size: 25
+use_GP: True #Turn off if doing random
+log_reward: True
+
+#GPY
+GP_learning_rate: 0.1 #0.1
+GP_training_iters: 10 #150
+approximate: False
+noise: 1.0e-4
+kernel_name: rbf
+mixtures: 2 #In case of SM
+operation: mul
+
+#Time functions
+#time_functions: [linear, polynomial]
+#time_function_probabilities: [0.5, 0.5]
+constant_range: [5, 10]
+linear_range: [10, 20]
+polynomial_range: [0.5, 1.5]
+
+#Random function
+functions: [convex] #Rosenbrock or convex for now
+convex_a: [0.01, 0.5]
+convex_b: [0.01, 0.5]
+rosenbrock_a: [5, 10]
+rosenbrock_b: [50, 100]
+himmelblau_a: [8, 14] 
+himmelblau_b: [4, 10]
+noise_scale: 1.5
+noise_correlation: 3.5
+max_value_range: [0.5, 3]
+
+#PPO
+total_timesteps: 5000000
+anneal_lr: True
+gae_lambda: 0.98
+num_minibatches: 4
+update_epochs: 4
+norm_adv: True
+clip_coef: 0.2
+clip_vloss: True
+vf_coef: 1 #0.5
+max_grad_norm: 0.5
+target_kl: 0.3
+
+ent_coef: 0.01
+num_steps: 32
+learning_rate: 1.0e-4
+gamma: 1
+weight_decay: 0 #1.0e-4
+
+pre_trained: True 

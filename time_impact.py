@@ -9,23 +9,21 @@ from agents.pointwise import Agent
 from utils import load_config
 
 config = load_config("configs\\training_config.yml")
-
+config.use_time = True
 env = BlackBox(config)
-agent: Agent = Agent(env.observation_space, env.dims)
-#agent.load_state_dict(torch.load("model_with_positional_encoding.t"))
-#agent.load_state_dict(torch.load("models/With positional encoding, temperature, convex, relu, high res.t"))
-agent.load_state_dict(torch.load("models/test.t"))
+agent: Agent = Agent(env.observation_space, config.layer_size, env.dims)
+agent.load_state_dict(torch.load("models/multimodal temperature.t"))
 
 s = env.reset()
 
-#Mean, std, time in point, time spent, best pred
-point = [0.5, 0, 0, 0.5, 0.7]
+#Mean, std, time in point, time spent, best pred, max time
+point = [0.5, 1, 0, 0, 0.7, 0.1]
 AFs = np.zeros((100, 100))
 critic_vals = np.zeros((100, 100))
 for i, time in enumerate(np.linspace(0, 1, 100)):
     for j, mean in enumerate(np.linspace(0, 1, 100)):
-        point[0] = time
-        point[1] = mean
+        point[4] = time
+        point[5] = mean
         tens = torch.tensor(point).unsqueeze(0).to(torch.float32)
         with torch.no_grad():
             AF = agent.actor(tens).cpu().numpy().squeeze()
@@ -42,12 +40,12 @@ axs[0].invert_yaxis()
 axs[0].set_ylabel("Time")
 axs[0].set_xlabel("Mean")
 
-axs[1].set_title("Critic")
+"""axs[1].set_title("Critic")
 img = axs[1].imshow(critic_vals)
 plt.colorbar(img)
 axs[1].invert_yaxis()
 axs[1].set_ylabel("Time")
-axs[1].set_xlabel("Mean")
+axs[1].set_xlabel("Mean")"""
 
 plt.show()
 

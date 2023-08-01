@@ -1,7 +1,8 @@
 import yaml
 import torch
-from gpytorch.kernels import RBFKernel, MaternKernel
+from gpytorch.kernels import RBFKernel, MaternKernel, PeriodicKernel, SpectralMixtureKernel
 import numpy as np
+from copy import deepcopy
 #Thanks to GPT-4
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -17,14 +18,17 @@ class AttrDict(dict):
     def __delattr__(self, item):
         self.__delitem__(item)
 
+    def __deepcopy__(self, memo=None):
+        return AttrDict(deepcopy(dict(self), memo=memo))
+
 def rand(start, end, size) -> torch.Tensor:
     if isinstance(size, int):
         size = (size, )
-    return torch.distributions.uniform.Uniform(start, end).sample(size).to(torch.device("cuda")).squeeze()
+    return torch.distributions.uniform.Uniform(start, end).sample(size).to(torch.device("cpu")).squeeze()
 
 def make_action(action, dims):
     """When doing batched stuff but only having an action for the first dim"""
-    return torch.stack((torch.tensor(action), torch.tensor([0.12 for _ in range(dims)])), dim = 0).to(torch.device("cuda"))
+    return torch.stack((torch.tensor(action), torch.tensor([0.12 for _ in range(dims)])), dim = 0).to(torch.device("cpu"))
 
 #Thanks to GPT-4
 def metrics_per_class(rewards, peaks, lengths, class_idx, total_classes):
@@ -45,7 +49,7 @@ def metrics_per_class(rewards, peaks, lengths, class_idx, total_classes):
 
 
 
-def load_config(path: str, change_dict = {}):
+def load_config(path: str, change_dict = {}) -> AttrDict:
     config = yaml.safe_load(open(path))
 
     for key, val in change_dict.items():
@@ -55,15 +59,18 @@ def load_config(path: str, change_dict = {}):
         if isinstance(val, str) and val.lower() == "none":
             config[key] = None
     
-    kernels = []
-    for kernel in config["kernel_classes"]:
-        assert kernel.lower() in ["rbf", "matern"], "Only RBF and Matern support atm"
-        if kernel.lower() == "rbf":
-            kernels.append(RBFKernel)
-        elif kernel.lower() == "matern":
-            kernels.append(MaternKernel)
+    kernel = config["kernel_name"]
+    assert kernel.lower() in ["rbf", "matern", "periodic", "sm"], "Only RBF, periodic and Matern support atm"
+    if kernel.lower() == "rbf":
+        kernel = RBFKernel
+    elif kernel.lower() == "matern":
+        kernel = MaternKernel
+    elif kernel.lower() == "periodic":
+        kernel = PeriodicKernel
+    elif kernel.lower() == "sm":
+        kernel = SpectralMixtureKernel
 
-    config["kernel_classes"] = kernels
+    config["kernel"] = kernel
     config = AttrDict(config)
 
     return config

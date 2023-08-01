@@ -19,8 +19,8 @@ class RandomHimmelblau:
         X, Y = np.meshgrid(x, x)
         X = np.repeat(X[None, :, :], self.batch_size, axis=0)
         Y = np.repeat(Y[None, :, :], self.batch_size, axis=0)
-        self.x = torch.tensor(X).to(torch.device("cuda"))
-        self.y = torch.tensor(Y).to(torch.device("cuda"))
+        self.x = torch.tensor(X).to(torch.device("cpu"))
+        self.y = torch.tensor(Y).to(torch.device("cpu"))
 
 
 
@@ -45,7 +45,7 @@ class RandomHimmelblau:
         noise = np.random.normal(loc=1, scale=self.noise_scale, size=(tuple(self.resolution for _ in range(self.dims)) + (size, )))
         noise = gaussian_filter(noise, sigma=self.noise_correlation) # adjust sigma to control the amount of correlation
 
-        return torch.tensor(noise).to(torch.device("cuda"))
+        return torch.tensor(noise).to(torch.device("cpu"))
     
     def _make_matrix(self, size, params):
         if self.dims == 3:

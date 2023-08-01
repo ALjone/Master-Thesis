@@ -73,30 +73,30 @@ class BlackBox():
         self.coder = TileCoder(config.resolution, config.domain, dims = config.dims) #NOTE: Sorta useless atm
         self.function_generator = RandomFunction(config)
 
-        self.time = torch.zeros(config.batch_size).to(torch.device("cuda"))
-        self.grid = torch.zeros(self.observation_space.shape, dtype = torch.float32).to(torch.device("cuda"))
+        self.time = torch.zeros(config.batch_size).to(torch.device("cpu"))
+        self.grid = torch.zeros(self.observation_space.shape, dtype = torch.float32).to(torch.device("cpu"))
         self.params_for_time = {}
         self.upper_lower_time_bounds = config.time_bounds
         for dim in range(config.dims):
-            self.params_for_time[dim] = rand(config.time_bounds[0], config.time_bounds[1], size=(self.batch_size, )).to(torch.device("cuda"))
-        self.params_for_time["constant"] = rand(2, 4, size=(self.batch_size, )).to(torch.device("cuda"))
+            self.params_for_time[dim] = rand(config.time_bounds[0], config.time_bounds[1], size=(self.batch_size, )).to(torch.device("cpu"))
+        self.params_for_time["constant"] = rand(2, 4, size=(self.batch_size, )).to(torch.device("cpu"))
 
-        self.max_time = self._t(torch.full_like(torch.zeros((config.batch_size, config.dims)), self.x_max).to(torch.device("cuda")), idx = torch.arange(start=0, end=config.batch_size)).to(torch.device("cuda"))
+        self.max_time = self._t(torch.full_like(torch.zeros((config.batch_size, config.dims)), self.x_max).to(torch.device("cpu")), idx = torch.arange(start=0, end=config.batch_size)).to(torch.device("cpu"))
         assert self.max_time.shape[0] == config.batch_size
 
         self.actions_for_gp = [[]]*self.batch_size
         self.values_for_gp = [[]]*self.batch_size
         self.checked_points = torch.zeros((config.batch_size, ) + tuple(self.resolution for _ in range(config.dims)))
         self.expand_size = config.expand_size #NOTE: This just says how much we expand the two above to
-        self.batch_step = torch.zeros((config.batch_size)).to(torch.long).to(torch.device("cuda")) #The tracker for what step each "env" is at 
-        self.best_prediction = torch.zeros((config.batch_size)).to(torch.device("cuda")) #Assumes all predictions are positive
-        self.previous_closeness_to_max = torch.zeros((config.batch_size)).to(torch.device("cuda"))
+        self.batch_step = torch.zeros((config.batch_size)).to(torch.long).to(torch.device("cpu")) #The tracker for what step each "env" is at 
+        self.best_prediction = torch.zeros((config.batch_size)).to(torch.device("cpu")) #Assumes all predictions are positive
+        self.previous_closeness_to_max = torch.zeros((config.batch_size)).to(torch.device("cpu"))
 
         if self.use_GP:
             self.GP = GP(config)
-        self.idx = torch.arange(start = 0, end = self.batch_size).to(torch.device("cuda"))
+        self.idx = torch.arange(start = 0, end = self.batch_size).to(torch.device("cpu"))
 
-        self.episodic_returns = torch.zeros((config.batch_size)).to(torch.device("cuda"))
+        self.episodic_returns = torch.zeros((config.batch_size)).to(torch.device("cpu"))
 
         self.reset()
 
@@ -119,7 +119,7 @@ class BlackBox():
         for dim in range(self.dims):
             act = (action[:, dim]-self.x_min)/x_range
             res += self.params_for_time[dim][idx]*act
-        res += self.params_for_time["constant"][idx] + torch.normal(0, 0.1, size = (idx.shape[0], )).to(torch.device("cuda"))
+        res += self.params_for_time["constant"][idx] + torch.normal(0, 0.1, size = (idx.shape[0], )).to(torch.device("cpu"))
 
         return res
 
@@ -129,7 +129,7 @@ class BlackBox():
             return
         #raise NotImplementedError("Needs to circumvent step, to only check init points for idx")
         for i in range(self.num_init_points):
-            ind = torch.tensor(self.action_space.sample()).to(torch.device("cuda"))[idx] #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cuda"))
+            ind = torch.tensor(self.action_space.sample()).to(torch.device("cpu"))[idx] #rand(self.action_min, self.action_max, (idx.shape[0], self.dims)) #self.action_space.sample()[idx].to(torch.device("cpu"))
             if len(ind.shape) == 1: ind = ind.unsqueeze(0)
             #Transform from -1 to 1 -> current domain
             act = (ind-(self.resolution//2))/(self.resolution//2)
@@ -169,13 +169,13 @@ class BlackBox():
         #NOTE: Max is 32827 seconds, min is 406
         for dim in range(self.dims):
             param = self.params_for_time[dim]
-            param[idx] = rand(self.upper_lower_time_bounds[0], self.upper_lower_time_bounds[1], size=idx.shape[0]).to(torch.device("cuda"))
+            param[idx] = rand(self.upper_lower_time_bounds[0], self.upper_lower_time_bounds[1], size=idx.shape[0]).to(torch.device("cpu"))
             self.params_for_time[dim] = param
         constant = self.params_for_time["constant"]
-        constant[idx] = rand(2, 4, size=idx.shape[0]).to(torch.device("cuda"))
+        constant[idx] = rand(2, 4, size=idx.shape[0]).to(torch.device("cpu"))
         self.params_for_time["constant"]
 
-        self.max_time[idx] = self._t(torch.full_like(torch.zeros((len(idx), self.dims)), self.x_max).to(torch.device("cuda")), idx)
+        self.max_time[idx] = self._t(torch.full_like(torch.zeros((len(idx), self.dims)), self.x_max).to(torch.device("cpu")), idx)
 
         self.function_generator.reset(idx)
         self.func_grid = self.function_generator.matrix
@@ -246,7 +246,7 @@ class BlackBox():
         output = []
         for a in action:
             output.append(self._transform_action(a, self.x_max, self.x_min))
-        return torch.stack(output, dim = 1).to(torch.device("cuda"))
+        return torch.stack(output, dim = 1).to(torch.device("cpu"))
 
     def step(self, action, isindex = True) -> Tuple[torch.Tensor, float, bool]:
         """Completes the given action and returns the new map"""

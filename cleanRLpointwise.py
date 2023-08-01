@@ -24,7 +24,7 @@ def get_config():
 
 if __name__ == "__main__":
     config = get_config()
-    run_name = "Goldstein-Price" + (" no time" if not config.use_time else "") #"With positional encoding, temperature, convex, relu, high res"
+    run_name = f"testing stuff" + (" no time" if not config.use_time else "") + (" from pretrained" if config.use_pretrained else "")
 
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
@@ -32,14 +32,15 @@ if __name__ == "__main__":
         "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(config).items()])),
     )
 
-
-    device = torch.device("cuda")
+    device = torch.device("cpu")
 
     # env setup
     env: BlackBox = BlackBox(config)
 
     #agent = torch.load("Pretrained_tanh_agent.t") if args.pretrained else tanh_Agent(env.observation_space, args.dims).to(device)
     agent = Agent(env.observation_space, config.layer_size, config.dims).to(device) #pix_agent(env.observation_space, config.dims).to(device)
+    if config.use_pretrained:
+        agent.load_state_dict(torch.load("models\\" + config.pre_trained_path))
     optimizer = optim.Adam(agent.parameters(), lr=config.learning_rate, eps=1e-5, weight_decay=config.weight_decay)
  
     # ALGO Logic: Storage setup
@@ -77,7 +78,7 @@ if __name__ == "__main__":
 
             # ALGO LOGIC: action logic
             with torch.no_grad():
-                action_before_tanh, logprob, _, value = agent.get_action_and_value(next_img_obs)
+                action_before_tanh, logprob, _, value = agent.get_action_and_value(next_img_obs, testing = True if config.use_pretrained else False)
                 values[step] = value.flatten()
             actions_before_tanh[step] = action_before_tanh
             logprobs[step] = logprob
@@ -112,6 +113,11 @@ if __name__ == "__main__":
                 delta = rewards[t] + config.gamma * nextvalues * nextnonterminal - values[t]
                 advantages[t] = lastgaelam = delta + config.gamma * config.gae_lambda * nextnonterminal * lastgaelam
             returns = advantages + values
+
+        
+        #print("SPS:", int((config.batch_size*config.num_steps) / (time.time() - start_time)), "Global step:", global_step, "Time since last update:", str(int(time.time()-start_time)) + "s")#, "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
+        #start_time = time.time()
+        #continue
 
         # flatten the batch
         b_img_obs = img_obs.reshape((-1,) + env.observation_space.shape[1:])
@@ -183,7 +189,6 @@ if __name__ == "__main__":
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         writer.add_scalar("charts/average_action", torch.mean(actions_before_tanh).item()/(config.resolution-1), global_step)
-        writer.add_scalar("charts/action_std", torch.std(stds).item(), global_step)
         writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
         writer.add_scalar("charts/max_observation", next_img_obs.max(), global_step)
         writer.add_scalar("charts/min_observation", next_img_obs.min(), global_step)
@@ -195,7 +200,7 @@ if __name__ == "__main__":
         writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
         writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
-        #print("SPS:", int((config.batch_size*config.num_steps) / (time.time() - start_time)), "Global step:", global_step, "Time since last update:", str(int(time.time()-start_time)) + "s")#, "Log std:", ", ".join([str(param.item()) for param in agent.action_logstd]))
+        writer.add_scalar("charts/temperature", agent.temperature.detach().cpu().numpy(), global_step)
         writer.add_scalar("charts/SPS", int((config.batch_size*config.num_steps) / (time.time() - start_time)), global_step)
         start_time = time.time()
         returns = []

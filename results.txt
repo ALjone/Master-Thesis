@@ -1,19 +1,293 @@
-Branin-Honn:
-    Baselining training env
+Multimodal 2D:
 
-        Baseline random with n = 100000:
-                Reward: 2.113816 ± 0.003418, Length: 6.454679 ± 0.009559, Peak: 0.979286 ± 7.9e-05
-                Log-transformed simple regret: 1.683736, Simple regret: 0.020714
+        Baseline random with n = 50000:
+                Reward: 1.199314 ± 0.002588, Length: 18.08691 ± 0.016286, Peak: 0.840579 ± 0.00052
+                Log-transformed simple regret: 0.797454, Simple regret: 0.159421
 
-        Baseline gpy with n = 100000:
-                Reward: 2.990389 ± 0.010302, Length: 9.757038 ± 0.017563, Peak: 0.987214 ± 7.3e-05
-                Log-transformed simple regret: 1.893265, Simple regret: 0.012786
+        Baseline gpy with n = 50000:
+                Reward: 2.225365 ± 0.005858, Length: 18.295829 ± 0.021084, Peak: 0.934053 ± 0.000407
+                Log-transformed simple regret: 1.180805, Simple regret: 0.065947
 
-        Time agent with n = 100000:
-                Reward: 2.908781 ± 0.009394, Length: 9.247268 ± 0.012924, Peak: 0.988335 ± 5.9e-05
-                Log-transformed simple regret: 1.933115, Simple regret: 0.011665
+        EIpu agent with n = 10000 sampling:
+                Reward: 2.405547 ± 0.014039, Length: 21.637972 ± 0.059816, Peak: 0.942914 ± 0.000827
+                Log-transformed simple regret: 1.24347, Simple regret: 0.057086
 
-        No time agent with n = 100000:
-                Reward: 3.01523 ± 0.010016, Length: 7.304013 ± 0.011129, Peak: 0.988371 ± 5.9e-05
-                Log-transformed simple regret: 1.934458, Simple regret: 0.011629
+        Time agent with n = 50000 using argmax:
+                Reward: 2.442427 ± 0.006517, Length: 26.548903 ± 0.027036, Peak: 0.935286 ± 0.000423
+                Log-transformed simple regret: 1.189002, Simple regret: 0.064714
 
+        No time agent with n = 50000 using argmax:
+                Reward: 2.015795 ± 0.006751, Length: 20.187176 ± 0.035653, Peak: 0.88822 ± 0.000543
+                Log-transformed simple regret: 0.951636, Simple regret: 0.11178
+
+        Time agent with n = 50000 sampling:
+                Reward: 2.71864 ± 0.006716, Length: 21.296037 ± 0.018094, Peak: 0.956154 ± 0.000324
+                Log-transformed simple regret: 1.35807, Simple regret: 0.043846
+
+        No time agent with n = 50000 sampling:
+                Reward: 2.388971 ± 0.006351, Length: 18.230957 ± 0.016969, Peak: 0.943636 ± 0.000362
+                Log-transformed simple regret: 1.248998, Simple regret: 0.056364
+
+
+
+
+
+Multimodal 3D 3 time dims:
+
+        Baseline random with n = 10000:
+                Reward: 0.68566 ± 0.003772, Length: 12.817755 ± 0.023666, Peak: 0.614779 ± 0.001733
+                Log-transformed simple regret: 0.41429, Simple regret: 0.385221
+
+        Baseline gpy with n = 10000:
+                Reward: 1.211955 ± 0.010484, Length: 13.937456 ± 0.040133, Peak: 0.784409 ± 0.001665
+                Log-transformed simple regret: 0.666369, Simple regret: 0.215591
+
+        EIpu agent with n = 10000 sampling:
+                Reward: 0.59656 ± 0.004925, Length: 14.859714 ± 0.040028, Peak: 0.551874 ± 0.002343
+                Log-transformed simple regret: 0.3486, Simple regret: 0.448126
+
+        Time agent with n = 10000 using argmax:
+                Reward: 1.141842 ± 0.010701, Length: 30.144286 ± 0.074597, Peak: 0.703571 ± 0.002526
+                Log-transformed simple regret: 0.528079, Simple regret: 0.296429
+
+        No time agent with n = 10000 using argmax:
+                Reward: 1.019526 ± 0.008996, Length: 14.997003 ± 0.054244, Peak: 0.736745 ± 0.001693
+                Log-transformed simple regret: 0.579623, Simple regret: 0.263255
+
+        Time agent with n = 10000 sampling:
+                Reward: 1.096231 ± 0.008966, Length: 16.993602 ± 0.030379, Peak: 0.759402 ± 0.001712
+                Log-transformed simple regret: 0.618708, Simple regret: 0.240598
+
+        No time agent with n = 10000 sampling:
+                Reward: 0.986315 ± 0.007441, Length: 13.259148 ± 0.026993, Peak: 0.744147 ± 0.001576
+                Log-transformed simple regret: 0.592009, Simple regret: 0.255853
+
+
+
+
+
+Multimodal 3D 2 time dims:
+
+        Baseline random with n = 10000:
+                Reward: 0.722668 ± 0.004182, Length: 17.872364 ± 0.035053, Peak: 0.650152 ± 0.001633
+                Log-transformed simple regret: 0.456121, Simple regret: 0.349848
+
+        Baseline gpy with n = 10000:
+                Reward: 1.326699 ± 0.01106, Length: 19.273691 ± 0.063853, Peak: 0.803814 ± 0.001612
+                Log-transformed simple regret: 0.707332, Simple regret: 0.196186
+
+        EIpu agent with n = 10000 sampling:
+                Reward: 2.426114 ± 0.016603, Length: 21.483938 ± 0.066049, Peak: 0.923667 ± 0.000958
+                Log-transformed simple regret: 1.117288, Simple regret: 0.076333
+
+        Time agent with n = 10000 using argmax:
+                Reward: 1.258845 ± 0.010756, Length: 35.5468 ± 0.077682, Peak: 0.775933 ± 0.001983
+                Log-transformed simple regret: 0.649622, Simple regret: 0.224067
+
+        No time agent with n = 10000 using argmax:
+                Reward: 1.056097 ± 0.009192, Length: 21.534986 ± 0.089826, Peak: 0.745297 ± 0.001697
+                Log-transformed simple regret: 0.593966, Simple regret: 0.254703
+
+        Time agent with n = 10000 sampling:
+                Reward: 1.259929 ± 0.00986, Length: 23.313249 ± 0.044205, Peak: 0.808549 ± 0.001448
+                Log-transformed simple regret: 0.717942, Simple regret: 0.191451
+
+        No time agent with n = 10000 sampling:
+                Reward: 1.140494 ± 0.008943, Length: 18.463668 ± 0.039859, Peak: 0.790972 ± 0.001438
+                Log-transformed simple regret: 0.679796, Simple regret: 0.209028
+
+
+
+
+
+Multimodal model on convex functions 2D with resolution 100:
+
+        Baseline random with n = 10000:
+                Reward: 1.320919 ± 0.004428, Length: 17.377304 ± 0.033352, Peak: 0.89242 ± 0.000649
+                Log-transformed simple regret: 0.968268, Simple regret: 0.10758
+
+        Baseline gpy with n = 10000:
+                Reward: 1.930542 ± 0.009395, Length: 19.682451 ± 0.085276, Peak: 0.9505 ± 0.00041
+                Log-transformed simple regret: 1.305395, Simple regret: 0.0495
+
+        EIpu agent with n = 10000 sampling:
+                Reward: 1.746136 ± 0.008524, Length: 22.304044 ± 0.086919, Peak: 0.942689 ± 0.000516
+                Log-transformed simple regret: 1.241762, Simple regret: 0.057311
+
+        Time agent with n = 10000 using argmax:
+                Reward: 1.61266 ± 0.008388, Length: 34.050885 ± 0.120556, Peak: 0.924066 ± 0.000606
+                Log-transformed simple regret: 1.119564, Simple regret: 0.075934
+
+        No time agent with n = 10000 using argmax:
+                Reward: 1.794474 ± 0.009463, Length: 20.876755 ± 0.104264, Peak: 0.94439 ± 0.000504
+                Log-transformed simple regret: 1.254847, Simple regret: 0.05561
+
+        Time agent with n = 10000 sampling:
+                Reward: 1.796269 ± 0.007756, Length: 21.08127 ± 0.048926, Peak: 0.950767 ± 0.000414
+                Log-transformed simple regret: 1.307744, Simple regret: 0.049233
+
+        No time agent with n = 10000 sampling:
+                Reward: 1.668155 ± 0.00766, Length: 18.090519 ± 0.037925, Peak: 0.942163 ± 0.000445
+                Log-transformed simple regret: 1.237794, Simple regret: 0.057837
+
+
+
+Multimodal model on goldsteinprice functions 2D:
+
+        Baseline random with n = 10000:
+                Reward: 0.958494 ± 0.004372, Length: 17.701295 ± 0.033005, Peak: 0.763957 ± 0.000931
+                Log-transformed simple regret: 0.627009, Simple regret: 0.236043
+
+        Baseline gpy with n = 10000:
+                Reward: 0.993446 ± 0.006318, Length: 18.96963 ± 0.053578, Peak: 0.797003 ± 0.000999
+                Log-transformed simple regret: 0.69251, Simple regret: 0.202997
+
+        EIpu agent with n = 10000 sampling:
+                Reward: 0.926506 ± 0.004929, Length: 30.894201 ± 0.204101, Peak: 0.783786 ± 0.000976
+                Log-transformed simple regret: 0.665116, Simple regret: 0.216214
+
+        Time agent with n = 10000 using argmax:
+                Reward: 0.78341 ± 0.004446, Length: 42.152772 ± 0.111307, Peak: 0.696717 ± 0.001258
+                Log-transformed simple regret: 0.518152, Simple regret: 0.303283
+
+        No time agent with n = 10000 using argmax:
+                Reward: 1.096121 ± 0.008116, Length: 19.594901 ± 0.052143, Peak: 0.806068 ± 0.001135
+                Log-transformed simple regret: 0.712351, Simple regret: 0.193932
+
+        Time agent with n = 10000 sampling:
+                Reward: 1.176823 ± 0.006759, Length: 21.220691 ± 0.036903, Peak: 0.847984 ± 0.000802
+                Log-transformed simple regret: 0.818111, Simple regret: 0.152016
+
+        No time agent with n = 10000 sampling:
+                Reward: 1.030534 ± 0.004978, Length: 17.564327 ± 0.032842, Peak: 0.804667 ± 0.000854
+                Log-transformed simple regret: 0.709224, Simple regret: 0.195333
+
+
+
+
+Multimodal model on multimodal different time #1:
+
+        Baseline random with n = 10000:
+                Reward: 1.086793 ± 0.005632, Length: 13.838835 ± 0.037436, Peak: 0.815182 ± 0.001298
+                Log-transformed simple regret: 0.733256, Simple regret: 0.184818
+
+        Baseline gpy with n = 10000:
+                Reward: 2.033761 ± 0.012643, Length: 14.578049 ± 0.045914, Peak: 0.920179 ± 0.001001
+                Log-transformed simple regret: 1.097883, Simple regret: 0.079821
+
+        EIpu agent with n = 10000 sampling:
+                Reward: 2.204887 ± 0.013576, Length: 18.179228 ± 0.051539, Peak: 0.93006 ± 0.000932
+                Log-transformed simple regret: 1.155274, Simple regret: 0.06994
+
+        Time agent with n = 10000 using argmax:
+                Reward: 2.332859 ± 0.014463, Length: 22.747908 ± 0.0529, Peak: 0.923654 ± 0.00103
+                Log-transformed simple regret: 1.117214, Simple regret: 0.076346
+
+        No time agent with n = 10000 using argmax:
+                Reward: 2.015724 ± 0.015046, Length: 16.249576 ± 0.064188, Peak: 0.889033 ± 0.001207
+                Log-transformed simple regret: 0.954806, Simple regret: 0.110967
+
+        Time agent with n = 10000 sampling:
+                Reward: 2.44553 ± 0.014539, Length: 17.813104 ± 0.045137, Peak: 0.939291 ± 0.00088
+                Log-transformed simple regret: 1.216747, Simple regret: 0.060709
+
+        No time agent with n = 10000 sampling:
+                Reward: 2.104023 ± 0.013328, Length: 15.095504 ± 0.04378, Peak: 0.926178 ± 0.000942                                                                                                                                                                                              
+                Log-transformed simple regret: 1.131814, Simple regret: 0.073822
+
+
+
+
+
+Multimodal model on multimodal different time #2:
+
+        Baseline random with n = 10000:
+                Reward: 1.296981 ± 0.005852, Length: 23.949247 ± 0.050781, Peak: 0.862892 ± 0.001041
+                Log-transformed simple regret: 0.862937, Simple regret: 0.137108
+
+        Baseline gpy with n = 10000:
+                Reward: 2.531512 ± 0.013295, Length: 24.204801 ± 0.054357, Peak: 0.954348 ± 0.000733
+                Log-transformed simple regret: 1.34054, Simple regret: 0.045652
+                
+        EIpu agent with n = 10000 sampling:
+                Reward: 2.503719 ± 0.014957, Length: 25.576339 ± 0.053818, Peak: 0.946912 ± 0.000832
+                Log-transformed simple regret: 1.275004, Simple regret: 0.053088
+
+        Time agent with n = 10000 using argmax:
+                Reward: 2.70452 ± 0.014852, Length: 26.7987 ± 0.050366, Peak: 0.954463 ± 0.000774
+                Log-transformed simple regret: 1.341636, Simple regret: 0.045537
+
+        No time agent with n = 10000 using argmax:
+                Reward: 2.071029 ± 0.01539, Length: 24.804547 ± 0.060502, Peak: 0.889939 ± 0.001203
+                Log-transformed simple regret: 0.958367, Simple regret: 0.110061
+
+        Time agent with n = 10000 sampling:
+                Reward: 2.889065 ± 0.014704, Length: 25.522448 ± 0.05271, Peak: 0.96886 ± 0.000579
+                Log-transformed simple regret: 1.506681, Simple regret: 0.03114
+
+        No time agent with n = 10000 sampling:
+                Reward: 2.479505 ± 0.014535, Length: 25.267873 ± 0.054729, Peak: 0.955358 ± 0.000669
+                Log-transformed simple regret: 1.350256, Simple regret: 0.044642
+
+
+
+Goldsteinprice model on goldsteinprice functions 2D:
+
+        Baseline random with n = 10000:
+                Reward: 0.958494 ± 0.004372, Length: 17.701295 ± 0.033005, Peak: 0.763957 ± 0.000931
+                Log-transformed simple regret: 0.627009, Simple regret: 0.236043
+
+        Baseline gpy with n = 10000:
+                Reward: 0.993446 ± 0.006318, Length: 18.96963 ± 0.053578, Peak: 0.797003 ± 0.000999
+                Log-transformed simple regret: 0.69251, Simple regret: 0.202997
+
+        EIpu agent with n = 10000 sampling:
+                Reward: 0.972357 ± 0.004991, Length: 27.575107 ± 0.178433, Peak: 0.78272 ± 0.000978
+                Log-transformed simple regret: 0.66298, Simple regret: 0.21728
+
+        Time agent with n = 10000 using argmax:
+                Reward: 1.107815 ± 0.007809, Length: 29.683019 ± 0.11357, Peak: 0.788588 ± 0.001461
+                Log-transformed simple regret: 0.67487, Simple regret: 0.211412
+
+        No time agent with n = 10000 using argmax:
+                Reward: 1.078617 ± 0.007789, Length: 20.025299 ± 0.070859, Peak: 0.782797 ± 0.001382
+                Log-transformed simple regret: 0.663134, Simple regret: 0.217203
+
+        Time agent with n = 10000 sampling:
+                Reward: 1.785842 ± 0.012052, Length: 22.473205 ± 0.038695, Peak: 0.914837 ± 0.000715
+                Log-transformed simple regret: 1.069749, Simple regret: 0.085163
+
+        No time agent with n = 10000 sampling:
+                Reward: 1.667264 ± 0.012301, Length: 20.105132 ± 0.046086, Peak: 0.892607 ± 0.000957
+                Log-transformed simple regret: 0.969024, Simple regret: 0.107393
+
+
+Goldsteinprice model on multimodal functions 2D:
+
+        Baseline random with n = 10000:
+                Reward: 1.228425 ± 0.005694, Length: 17.924705 ± 0.031981, Peak: 0.839173 ± 0.001177
+                Log-transformed simple regret: 0.793641, Simple regret: 0.160827
+
+        Baseline gpy with n = 10000:
+                Reward: 2.254713 ± 0.013468, Length: 19.213526 ± 0.057291, Peak: 0.936095 ± 0.000899
+                Log-transformed simple regret: 1.194465, Simple regret: 0.063905
+
+        EIpu agent with n = 10000 sampling:
+                Reward: 2.324041 ± 0.014187, Length: 22.176541 ± 0.066211, Peak: 0.938028 ± 0.000888
+                Log-transformed simple regret: 1.207804, Simple regret: 0.061972
+
+        Time agent with n = 10000 using argmax:
+                Reward: 1.063147 ± 0.007806, Length: 24.964321 ± 0.117695, Peak: 0.746597 ± 0.002162
+                Log-transformed simple regret: 0.596188, Simple regret: 0.253403
+
+        No time agent with n = 10000 using argmax:
+                Reward: 1.002444 ± 0.007806, Length: 20.5585 ± 0.086803, Peak: 0.715337 ± 0.002169
+                Log-transformed simple regret: 0.545669, Simple regret: 0.284663
+
+        Time agent with n = 10000 sampling:
+                Reward: 2.11609 ± 0.014365, Length: 23.329237 ± 0.078291, Peak: 0.902585 ± 0.001147
+                Log-transformed simple regret: 1.011374, Simple regret: 0.097415
+
+        No time agent with n = 10000 sampling:
+                Reward: 2.012932 ± 0.014358, Length: 19.394739 ± 0.073272, Peak: 0.895662 ± 0.001199
+                Log-transformed simple regret: 0.981557, Simple regret: 0.104338

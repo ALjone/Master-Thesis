@@ -14,7 +14,7 @@ class Linear():
         self.dims = dims
     
     def __call__(self, points) -> Any:
-        result = torch.zeros_like(points[..., 0], device=torch.device("cuda"))  # Initialize result tensor
+        result = torch.zeros_like(points[..., 0], device=torch.device("cpu"))  # Initialize result tensor
 
         for i in range(self.dims):
             constant = rand(self.coefficient_min, self.coefficient_max, result.shape[0])
@@ -33,7 +33,7 @@ class Polynomial():
     
     def __call__(self, points) -> Any:
 
-        result = torch.zeros_like(points[..., 0], device=torch.device("cuda"))  # Initialize result tensor
+        result = torch.zeros_like(points[..., 0], device=torch.device("cpu"))  # Initialize result tensor
 
         for i in self.dims:
             constant = rand(self.exponent_min, self.exponent_max, result.shape[0])
@@ -57,18 +57,18 @@ class TimeFunction:
         #for funcname in :
         self.function_types_probabilities = config.time_function_probabilities
 
-        self.time_matrix = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cuda"))
-        self.max = torch.zeros((self.batch_size)).to(torch.device("cuda"))
-        self.min = torch.zeros((self.batch_size)).to(torch.device("cuda"))
-        self.time_classes = torch.zeros((self.batch_size), dtype=torch.long).to(torch.device("cuda"))
+        self.time_matrix = torch.zeros((self.batch_size, ) + tuple(self.resolution for _ in range(self.dims))).to(torch.device("cpu"))
+        self.max = torch.zeros((self.batch_size)).to(torch.device("cpu"))
+        self.min = torch.zeros((self.batch_size)).to(torch.device("cpu"))
+        self.time_classes = torch.zeros((self.batch_size), dtype=torch.long).to(torch.device("cpu"))
 
-        x = torch.linspace(0, config.domain[0]-config.domain[1], self.resolution, device=torch.device("cuda"))  # Generate equally spaced values between -1 and 1
+        x = torch.linspace(0, config.domain[0]-config.domain[1], self.resolution, device=torch.device("cpu"))  # Generate equally spaced values between -1 and 1
         grids = torch.meshgrid(*([x] * config.dims))  # Create grids for each dimension
         self.points = torch.stack(grids, dim=-1)  # Stack grids along the last axis to get points
         print(self.points.shape)
         print(grids.shape)
         shape = [self.batch_size] + list(self.points.shape)
-        self.x = torch.repeat_interleave(self.points, self.batch_size).reshape(shape).to(torch.device("cuda"))
+        self.x = torch.repeat_interleave(self.points, self.batch_size).reshape(shape).to(torch.device("cpu"))
         print(self.x.shape)
         exit()
         lin = Linear(config.linear_range, config.constant, config.dims)
@@ -90,7 +90,7 @@ class TimeFunction:
         #Get the matrix and save it
         matrix = func.get_matrix(idx.shape[0])
         self.time_matrix[idx] = matrix
-        self.max[idx] = torch.ones((len(idx), )).to(torch.device("cuda"))
+        self.max[idx] = torch.ones((len(idx), )).to(torch.device("cpu"))
         self.min[idx] = torch.amin(matrix, dim = tuple(range(1, self.dims+1)))
         
         #Do some basic checks

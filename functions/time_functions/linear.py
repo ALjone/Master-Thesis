@@ -16,7 +16,7 @@ class LinearTime:
         self.max_time = config.max_range
             
         x = torch.linspace(self.range[0], self.range[1], self.resolution)
-        self.x = torch.repeat_interleave(x, self.batch_size).reshape(-1, self.batch_size).to(torch.device("cuda"))
+        self.x = torch.repeat_interleave(x, self.batch_size).reshape(-1, self.batch_size).to(torch.device("cpu"))
 
     def get_params(self, size):
         params = {}

@@ -5,7 +5,7 @@ from agents.pix_2_pix_agent import Agent
 from matplotlib import pyplot as plt
 
 env = BlackBox(30, batch_size=2, dims = 2)
-agent: Agent = Agent(env.observation_space, env.dims).to(torch.device("cuda"))
+agent: Agent = Agent(env.observation_space, env.dims).to(torch.device("cpu"))
 agent.load_state_dict(torch.load("model.t"))
 
 s, t = env.reset()

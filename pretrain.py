@@ -9,7 +9,7 @@ print("Running with batch size:", env.batch_size)
 for attempt in range(10):
     print("Attempt:", attempt, "\n")
     s, t = env.reset()
-    agent = Agent(env.observation_space, dims = 2).to(torch.device("cuda"))
+    agent = Agent(env.observation_space, dims = 2).to(torch.device("cpu"))
     opt = torch.optim.Adam(agent.parameters(), lr = 0.5e-4)
     losses = []
     should_break = False

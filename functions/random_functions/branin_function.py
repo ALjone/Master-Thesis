@@ -19,8 +19,8 @@ class RandomBranin:
         X1, X2 = np.meshgrid(x1, x2)
         X1 = np.repeat(X1[None, :, :], self.batch_size, axis=0)
         X2 = np.repeat(X2[None, :, :], self.batch_size, axis=0)
-        self.x1 = torch.tensor(X1).to(torch.device("cuda"))
-        self.x2 = torch.tensor(X2).to(torch.device("cuda"))
+        self.x1 = torch.tensor(X1).to(torch.device("cpu"))
+        self.x2 = torch.tensor(X2).to(torch.device("cpu"))
 
         # parameters for the Branin function
         self.a = 1
@@ -51,7 +51,7 @@ class RandomBranin:
         noise = np.random.normal(loc=1, scale=self.noise_scale, size=(tuple(self.resolution for _ in range(self.dims)) + (size, )))
         noise = gaussian_filter(noise, sigma=self.noise_correlation) # adjust sigma to control the amount of correlation
 
-        return torch.tensor(noise).to(torch.device("cuda"))
+        return torch.tensor(noise).to(torch.device("cpu"))
     
     def _make_matrix(self, size, params):
         if self.dims == 3:

@@ -164,7 +164,7 @@ class Agent(nn.Module):
         stds = action_std[0].squeeze()
         normal_1 = Normal(mus[0], stds[1])
         normal_2 = Normal(mus[1], stds[1])
-        x = torch.linspace(-1, 1, 100).to(torch.device("cuda"))
+        x = torch.linspace(-1, 1, 100).to(torch.device("cpu"))
         log_prob_1 = normal_1.log_prob(x)
         log_prob_2 = normal_2.log_prob(x)
         #log_prob_1 -= torch.log(1.0 - x.pow(2) + 1e-8)

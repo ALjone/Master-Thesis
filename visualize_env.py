@@ -2,7 +2,7 @@
 from env.batched_env_pointwise import BlackBox
 from utils import load_config
 
-config = load_config("configs\\training_config.yml", change_dict={"batch_size" : 2, "dims": 2, "num_init_points": 3})
+config = load_config("configs\\training_config.yml", change_dict={"batch_size" : 2, "dims": 2, "num_init_points": 10})
 
 env = BlackBox(config = config)
 

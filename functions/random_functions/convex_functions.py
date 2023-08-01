@@ -21,7 +21,7 @@ class RandomConvex:
         self.dims = config.dims
             
         x = torch.linspace(self.range[0], self.range[1], self.resolution)
-        self.x = torch.repeat_interleave(x, self.batch_size).reshape(-1, self.batch_size).to(torch.device("cuda"))
+        self.x = torch.repeat_interleave(x, self.batch_size).reshape(-1, self.batch_size).to(torch.device("cpu"))
 
     def get_params(self, size):
         params = {}
@@ -49,7 +49,7 @@ class RandomConvex:
         noise = np.random.normal(loc=1, scale=self.noise_scale, size=(tuple(self.resolution for _ in range(self.dims)) + (size, )))
         noise = gaussian_filter(noise, sigma=self.noise_correlation) # adjust sigma to control the amount of correlation
 
-        return torch.tensor(noise).to(torch.device("cuda"))
+        return torch.tensor(noise).to(torch.device("cpu"))
     
     def _make_matrix(self, size, params):
         if self.dims == 3:
